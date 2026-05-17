@@ -21,6 +21,9 @@ import com.android.purebilibili.feature.video.ui.overlay.resolveVideoProgressBar
 import com.android.purebilibili.feature.video.ui.components.SponsorSkipButton
 import com.android.purebilibili.feature.video.ui.components.TwoFingerSpeedFeedbackOverlay
 import com.android.purebilibili.feature.video.ui.components.VideoAspectRatio
+import com.android.purebilibili.feature.video.ui.components.GesturePercentTransitionDirection
+import com.android.purebilibili.feature.video.ui.components.resolveGesturePercentTransitionDirection
+import com.android.purebilibili.feature.video.ui.components.shouldTriggerGesturePercentHaptic
 import com.android.purebilibili.feature.video.ui.components.resolveVideoViewportLayout
 import com.android.purebilibili.feature.video.ui.components.toFullscreenAspectRatio
 import com.android.purebilibili.feature.video.ui.components.toVideoAspectRatio
@@ -125,7 +128,9 @@ import com.android.purebilibili.core.ui.blur.unifiedBlur
 import com.android.purebilibili.core.ui.transition.VIDEO_SHARED_COVER_ASPECT_RATIO
 import com.android.purebilibili.core.util.FormatUtils
 import com.android.purebilibili.core.util.CardPositionManager
+import com.android.purebilibili.core.util.HapticType
 import com.android.purebilibili.core.util.Logger
+import com.android.purebilibili.core.util.rememberHapticFeedback
 import com.android.purebilibili.feature.screenshot.AppScreenshotGestureBlockState
 import com.android.purebilibili.feature.video.subtitle.SubtitleDisplayMode
 import com.android.purebilibili.feature.video.subtitle.SubtitleAutoPreference
@@ -164,6 +169,7 @@ import kotlin.math.roundToInt
 private fun GesturePercentDigit(
     digit: Char?,
     shouldAnimate: Boolean,
+    transitionDirection: GesturePercentTransitionDirection,
     textStyle: TextStyle,
     textShadow: Shadow,
     slotWidth: androidx.compose.ui.unit.Dp,
@@ -200,8 +206,30 @@ private fun GesturePercentDigit(
     AnimatedContent(
         targetState = digit,
         transitionSpec = {
-            fadeIn(animationSpec = tween(motionSpec.digitEnterFadeDurationMillis))
-                .togetherWith(fadeOut(animationSpec = tween(motionSpec.digitExitFadeDurationMillis)))
+            val enterOffset: (Int) -> Int = { height ->
+                when (transitionDirection) {
+                    GesturePercentTransitionDirection.Increase -> height / 2
+                    GesturePercentTransitionDirection.Decrease -> -height / 2
+                    GesturePercentTransitionDirection.None -> 0
+                }
+            }
+            val exitOffset: (Int) -> Int = { height ->
+                when (transitionDirection) {
+                    GesturePercentTransitionDirection.Increase -> -height / 2
+                    GesturePercentTransitionDirection.Decrease -> height / 2
+                    GesturePercentTransitionDirection.None -> 0
+                }
+            }
+            (slideInVertically(
+                animationSpec = tween(motionSpec.digitEnterFadeDurationMillis),
+                initialOffsetY = enterOffset
+            ) + fadeIn(animationSpec = tween(motionSpec.digitEnterFadeDurationMillis)))
+                .togetherWith(
+                    slideOutVertically(
+                        animationSpec = tween(motionSpec.digitExitFadeDurationMillis),
+                        targetOffsetY = exitOffset
+                    ) + fadeOut(animationSpec = tween(motionSpec.digitExitFadeDurationMillis))
+                )
         },
         label = "gesture-percent-digit"
     ) { target ->
@@ -238,6 +266,16 @@ private fun GesturePercentValue(
     val changeMask = remember(previousPercent, percent) {
         resolveGesturePercentDigitChangeMask(previousPercent, percent)
     }
+    val transitionDirection = remember(previousPercent, percent) {
+        resolveGesturePercentTransitionDirection(previousPercent, percent)
+    }
+    val haptic = rememberHapticFeedback()
+
+    LaunchedEffect(previousPercent, percent) {
+        if (shouldTriggerGesturePercentHaptic(previousPercent, percent)) {
+            haptic(HapticType.SELECTION)
+        }
+    }
 
     Row(
         modifier = modifier,
@@ -249,6 +287,7 @@ private fun GesturePercentValue(
                 GesturePercentDigit(
                     digit = digit,
                     shouldAnimate = changeMask.getOrElse(index) { false },
+                    transitionDirection = transitionDirection,
                     textStyle = textStyle,
                     textShadow = textShadow,
                     slotWidth = 16.dp,

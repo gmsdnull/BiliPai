@@ -4,8 +4,12 @@ import io.github.alexzhirkevich.cupertino.icons.CupertinoIcons
 import io.github.alexzhirkevich.cupertino.icons.filled.*
 import io.github.alexzhirkevich.cupertino.icons.outlined.*
 import androidx.compose.ui.graphics.Color
+import com.android.purebilibili.feature.video.ui.components.GesturePercentTransitionDirection
+import com.android.purebilibili.feature.video.ui.components.resolveGesturePercentTransitionDirection
+import com.android.purebilibili.feature.video.ui.components.shouldTriggerGesturePercentHaptic
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class VideoGestureFeedbackPolicyTest {
@@ -245,6 +249,31 @@ class VideoGestureFeedbackPolicyTest {
             listOf(false, true, true),
             resolveGesturePercentDigitChangeMask(previousPercent = 49, currentPercent = 50)
         )
+    }
+
+    @Test
+    fun `resolveGesturePercentTransitionDirection follows value delta`() {
+        assertEquals(
+            GesturePercentTransitionDirection.Increase,
+            resolveGesturePercentTransitionDirection(previousPercent = 40, currentPercent = 41)
+        )
+        assertEquals(
+            GesturePercentTransitionDirection.Decrease,
+            resolveGesturePercentTransitionDirection(previousPercent = 41, currentPercent = 40)
+        )
+        assertEquals(
+            GesturePercentTransitionDirection.None,
+            resolveGesturePercentTransitionDirection(previousPercent = 40, currentPercent = 40)
+        )
+    }
+
+    @Test
+    fun `shouldTriggerGesturePercentHaptic only ticks crossed steps and endpoints`() {
+        assertFalse(shouldTriggerGesturePercentHaptic(previousPercent = 41, currentPercent = 42))
+        assertTrue(shouldTriggerGesturePercentHaptic(previousPercent = 44, currentPercent = 45))
+        assertTrue(shouldTriggerGesturePercentHaptic(previousPercent = 46, currentPercent = 45))
+        assertTrue(shouldTriggerGesturePercentHaptic(previousPercent = 98, currentPercent = 100))
+        assertTrue(shouldTriggerGesturePercentHaptic(previousPercent = 2, currentPercent = 0))
     }
 
     @Test
