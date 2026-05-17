@@ -92,6 +92,7 @@ import com.android.purebilibili.core.store.SettingsManager
 import com.android.purebilibili.core.store.TabletCommentPanelWidthPreset
 import com.android.purebilibili.core.ui.transition.VIDEO_SHARED_COVER_ASPECT_RATIO
 import com.android.purebilibili.core.util.ShareUtils
+import com.android.purebilibili.data.model.response.BgmInfo
 import com.android.purebilibili.data.model.response.ViewPoint
 import com.android.purebilibili.feature.common.resolveIndexedVideoLazyKey
 import com.android.purebilibili.feature.dynamic.components.ImagePreviewDialog
@@ -109,6 +110,7 @@ import com.android.purebilibili.feature.video.ui.components.rememberVideoComment
 import com.android.purebilibili.feature.video.ui.components.resolveReplyItemContentType
 import com.android.purebilibili.feature.video.ui.components.shouldShowReplyTopAction
 import com.android.purebilibili.feature.video.ui.section.ActionButtonsRow
+import com.android.purebilibili.feature.video.ui.section.resolveDisplayBgmList
 import com.android.purebilibili.feature.video.ui.section.UpInfoSection
 import com.android.purebilibili.feature.video.ui.section.VideoTitleWithDesc
 import com.android.purebilibili.feature.video.ui.section.VideoPlayerSection
@@ -140,6 +142,7 @@ fun TabletCinemaLayout(
     coverUrl: String = "",
     onBack: () -> Unit,
     onUpClick: (Long) -> Unit,
+    onBgmClick: (BgmInfo) -> Unit = {},
     onNavigateToAudioMode: () -> Unit,
     onToggleFullscreen: () -> Unit,
     isInPipMode: Boolean,
@@ -295,6 +298,8 @@ fun TabletCinemaLayout(
                         onCollectionEpisodeClick = onRelatedVideoClick,
                         onPageSelect = { pageIndex -> viewModel.switchPage(pageIndex) },
                         onOpenBilibiliLink = onOpenBilibiliLink,
+                        onBgmClick = onBgmClick,
+                        onRelatedVideoClick = onRelatedVideoClick,
                         onRetryAiSummary = viewModel::retryAiSummary
                     )
                 } else {
@@ -500,6 +505,8 @@ private fun CinemaMetaPanel(
     onCollectionEpisodeClick: (String, android.os.Bundle?) -> Unit,
     onPageSelect: (Int) -> Unit,
     onOpenBilibiliLink: ((String) -> Unit)?,
+    onBgmClick: (BgmInfo) -> Unit = {},
+    onRelatedVideoClick: (String, android.os.Bundle?) -> Unit = { _, _ -> },
     onRetryAiSummary: () -> Unit
 ) {
     val context = LocalContext.current
@@ -639,6 +646,8 @@ private fun CinemaMetaPanel(
                         CinemaVideoIntroSection(
                             success = success,
                             onOpenBilibiliLink = onOpenBilibiliLink,
+                            onBgmClick = onBgmClick,
+                            onRelatedVideoClick = onRelatedVideoClick,
                             onRetryAiSummary = onRetryAiSummary
                         )
                     }
@@ -728,7 +737,9 @@ private fun CinemaMetaUpInfo(
 @Composable
 private fun CinemaVideoIntroSection(
     success: PlayerUiState.Success,
+    onBgmClick: (BgmInfo) -> Unit = {},
     onOpenBilibiliLink: ((String) -> Unit)? = null,
+    onRelatedVideoClick: (String, android.os.Bundle?) -> Unit = { _, _ -> },
     onRetryAiSummary: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -756,9 +767,13 @@ private fun CinemaVideoIntroSection(
             VideoTitleWithDesc(
                 info = success.info,
                 videoTags = success.videoTags,
-                bgmInfo = success.bgmInfo,
-                bgmInfoList = success.bgmInfoList,
-                onDescriptionUrlClick = onOpenBilibiliLink
+                onDescriptionUrlClick = onOpenBilibiliLink,
+                bgmList = resolveDisplayBgmList(
+                    bgmInfo = success.bgmInfo,
+                    bgmInfoList = success.bgmInfoList
+                ),
+                onBgmClick = onBgmClick,
+                onRelatedVideoClick = onRelatedVideoClick
             )
         }
         if (shouldShowAiSummaryEntry(

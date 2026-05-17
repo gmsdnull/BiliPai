@@ -67,6 +67,7 @@ import com.android.purebilibili.feature.home.components.BottomBarLiquidSegmented
 import com.android.purebilibili.feature.video.ui.section.VideoTitleWithDesc
 import com.android.purebilibili.feature.video.ui.section.UpInfoSection
 import com.android.purebilibili.feature.video.ui.section.ActionButtonsRow
+import com.android.purebilibili.feature.video.ui.section.resolveDisplayBgmList
 import com.android.purebilibili.feature.video.ui.section.shouldShowAiSummaryEntry
 import com.android.purebilibili.feature.video.ui.section.resolveVideoDetailMotionBudget
 import com.android.purebilibili.feature.video.ui.section.shouldAnimateVideoDetailLayout
@@ -633,11 +634,13 @@ private fun VideoIntroTab(
                 onRetryAiSummary = onRetryAiSummary,
                 bgmInfo = bgmInfo,
                 bgmInfoList = bgmInfoList,
+                relatedVideos = relatedVideos,
                 onlineCount = onlineCount,
                 showOnlineCount = showOnlineCount,
                 onTimestampClick = onTimestampClick,
                 onBgmClick = onBgmClick,
                 onDescriptionUrlClick = onDescriptionUrlClick,
+                onRelatedVideoClick = onRelatedVideoClick,
                 showInteractionActions = showInteractionActions,
                 animateVideoDetailLayout = animateVideoDetailLayout
             )
@@ -946,9 +949,11 @@ private fun VideoHeaderContent(
     onRetryAiSummary: () -> Unit = {},
     bgmInfo: BgmInfo? = null,
     bgmInfoList: List<BgmInfo> = emptyList(),
+    relatedVideos: List<RelatedVideo> = emptyList(),
     onTimestampClick: ((Long) -> Unit)? = null,
     onBgmClick: (BgmInfo) -> Unit = {},
     onDescriptionUrlClick: ((String) -> Unit)? = null,
+    onRelatedVideoClick: (String, android.os.Bundle?) -> Unit = { _, _ -> },
     onlineCount: String = "",
     showOnlineCount: Boolean = true,
     showInteractionActions: Boolean = true,
@@ -984,12 +989,15 @@ private fun VideoHeaderContent(
             info = info,
             videoTags = videoTags,
             transitionEnabled = transitionEnabled,  // 🔗 传递共享元素开关
-            bgmInfo = bgmInfo,
-            bgmInfoList = bgmInfoList,
+            bgmList = resolveDisplayBgmList(
+                bgmInfo = bgmInfo,
+                bgmInfoList = bgmInfoList
+            ),
             onlineCount = onlineCount,
             showOnlineCount = showOnlineCount,
             onBgmClick = onBgmClick,
             onDescriptionUrlClick = onDescriptionUrlClick,
+            onRelatedVideoClick = onRelatedVideoClick,
             animateLayout = animateVideoDetailLayout
         )
 
