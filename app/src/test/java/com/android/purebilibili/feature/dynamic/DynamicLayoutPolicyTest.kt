@@ -86,6 +86,22 @@ class DynamicLayoutPolicyTest {
     @Test
     fun `dynamic action row uses equal slots so like button is not starved by earlier labels`() {
         assertEquals(1f, resolveDynamicActionButtonSlotWeight(), 0f)
-        assertEquals(12.dp, resolveDynamicActionButtonSpacing())
+        assertEquals(8.dp, resolveDynamicActionButtonSpacing())
+    }
+
+    @Test
+    fun `dynamic action text keeps share and comment labels when slot is narrow`() {
+        assertEquals(
+            "评论",
+            resolveDynamicActionButtonText(label = "评论", count = 1200, slotWidthDp = 96)
+        )
+        assertEquals(
+            "转发",
+            resolveDynamicActionButtonText(label = "转发", count = 34000, slotWidthDp = 96)
+        )
+        assertEquals(
+            "评论 1.2k",
+            resolveDynamicActionButtonText(label = "评论", count = 1200, slotWidthDp = 140)
+        )
     }
 }

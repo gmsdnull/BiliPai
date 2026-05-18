@@ -200,6 +200,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val todayDislikedBvids = mutableSetOf<String>()
     private val todayDislikedCreatorMids = mutableSetOf<Long>()
     private val todayDislikedKeywords = linkedSetOf<String>()
+    private val pendingNotInterestedRefilterBvids = mutableSetOf<String>()
     private var todayWatchPluginObserverJob: Job? = null
     private var observedTodayWatchPlugin: TodayWatchPlugin? = null
 
@@ -213,7 +214,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             blockedUpRepository.getAllBlockedUps().collect { list ->
                 blockedMids = list.map { it.mid }.toSet()
-                reFilterAllContent()
+                if (pendingNotInterestedRefilterBvids.isEmpty()) {
+                    reFilterAllContent()
+                }
             }
         }
         syncTodayWatchFeedbackFromStore()
@@ -591,6 +594,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     //  [新增] 完成消散动画（从列表移除并记录到已过滤集合）
     fun completeVideoDissolve(bvid: String) {
         val currentCategory = _uiState.value.currentCategory
+        val shouldRefilterAfterRemove = pendingNotInterestedRefilterBvids.remove(bvid)
         
         // Update global dissolving list
         val newDissolving = _uiState.value.dissolvingVideos - bvid
@@ -604,6 +608,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         
         // Also update the global dissolving set in UI state
         _uiState.value = _uiState.value.copy(dissolvingVideos = newDissolving)
+        if (shouldRefilterAfterRemove) {
+            reFilterAllContent()
+        }
         if (currentCategory == HomeCategory.RECOMMEND) {
             viewModelScope.launch {
                 val runtime = syncTodayWatchPluginState(clearWhenDisabled = true)
@@ -705,11 +712,18 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                         face = action.creatorFace
                     )
                     blockedMids = blockedMids + action.creatorMid
-                    reFilterAllContent()
+                    pendingNotInterestedRefilterBvids += bvid
                 }
             }
-            // Optimistically remove from UI
-            completeVideoDissolve(bvid)
+            val transition = resolveHomeNotInterestedVisualTransition(
+                isFeedbackRecorded = true,
+                isDissolveAnimationAvailable = true
+            )
+            if (transition.shouldStartDissolve) {
+                startVideoDissolve(bvid)
+            } else if (transition.shouldRemoveImmediately) {
+                completeVideoDissolve(bvid)
+            }
             com.android.purebilibili.core.util.Logger.d("HomeVM", "Marked as not interested: $bvid")
         }
     }

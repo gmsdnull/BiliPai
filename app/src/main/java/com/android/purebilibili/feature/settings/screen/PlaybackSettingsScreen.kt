@@ -1376,7 +1376,7 @@ private fun PlaybackFullscreenGestureSettingsSection(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             IOSSlidingSegmentedSetting(
-                title = "播放器缩小策略：${portraitPlayerCollapseMode.label}",
+                title = "评论上滑缩小播放器：${portraitPlayerCollapseMode.label}",
                 subtitle = portraitPlayerCollapseMode.description,
                 options = resolvePortraitPlayerCollapseModeSegmentOptions(),
                 selectedValue = portraitPlayerCollapseMode,

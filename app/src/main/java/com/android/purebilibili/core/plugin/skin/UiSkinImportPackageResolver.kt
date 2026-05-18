@@ -45,7 +45,10 @@ object UiSkinImportPackageResolver {
         "tail_icon_selected_myself" to "profile_selected"
     )
 
-    fun resolve(inputBytes: ByteArray): Result<UiSkinImportPackage> {
+    fun resolve(
+        inputBytes: ByteArray,
+        remotePackageFetcher: ((String) -> ByteArray)? = null
+    ): Result<UiSkinImportPackage> {
         return runCatching {
             if (UiSkinPackageReader.preview(inputBytes).isSuccess) {
                 return@runCatching UiSkinImportPackage(
@@ -55,20 +58,31 @@ object UiSkinImportPackageResolver {
             }
             UiSkinImportPackage(
                 source = UiSkinImportSource.BILIBILI_SKIN_ARCHIVE,
-                packageBytes = convertBilibiliThemeArchive(inputBytes)
+                packageBytes = convertBilibiliThemeArchive(inputBytes, remotePackageFetcher)
             )
         }
     }
 
-    private fun convertBilibiliThemeArchive(inputBytes: ByteArray): ByteArray {
+    private fun convertBilibiliThemeArchive(
+        inputBytes: ByteArray,
+        remotePackageFetcher: ((String) -> ByteArray)?
+    ): ByteArray {
+        if (looksLikeJson(inputBytes)) {
+            return convertDirectThemeJson(inputBytes, remotePackageFetcher)
+        }
         val outerEntries = scanZip(
             inputBytes = inputBytes,
             illegalPathMessage = "装扮存档包含非法路径"
         )
         val themeJson = selectThemeJsonOrNull(outerEntries)
-        val packageZip = selectPackageZipOrNull(outerEntries)
+        var packageZip = selectPackageZipOrNull(outerEntries)
         if (packageZip == null && themeJson != null) {
-            throw IllegalArgumentException("装扮存档缺少 _package.zip")
+            val packageUrl = themeJson.packageUrlOrNull()
+            packageZip = if (packageUrl != null) {
+                fetchRemotePackage(packageUrl, remotePackageFetcher)
+            } else {
+                throw IllegalArgumentException("装扮存档缺少 _package.zip")
+            }
         }
         val theme = if (packageZip == null) {
             BilibiliSkinTheme(
@@ -99,6 +113,41 @@ object UiSkinImportPackageResolver {
             assetPaths = assetBytesByPath.keys.toSet()
         )
         return buildBpskinPackage(manifest, assetBytesByPath)
+    }
+
+    private fun convertDirectThemeJson(
+        inputBytes: ByteArray,
+        remotePackageFetcher: ((String) -> ByteArray)?
+    ): ByteArray {
+        val packageUrl = inputBytes.packageUrlOrNull()
+            ?: throw IllegalArgumentException("皮肤 JSON 缺少 package_url，无法导入资源包")
+        val packageZip = fetchRemotePackage(packageUrl, remotePackageFetcher)
+        val theme = parseThemeJson(inputBytes)
+        val packageEntries = scanZip(
+            inputBytes = packageZip,
+            illegalPathMessage = "装扮资源包包含非法路径"
+        )
+        val assetBytesByPath = buildAssetBytes(packageEntries)
+        if (assetBytesByPath.isEmpty()) {
+            throw IllegalArgumentException("装扮资源包缺少可转换资源")
+        }
+        val manifest = buildManifest(
+            theme = theme,
+            assetPaths = assetBytesByPath.keys.toSet()
+        )
+        return buildBpskinPackage(manifest, assetBytesByPath)
+    }
+
+    private fun fetchRemotePackage(
+        packageUrl: String,
+        remotePackageFetcher: ((String) -> ByteArray)?
+    ): ByteArray {
+        val normalizedUrl = packageUrl.trim()
+        if (!normalizedUrl.startsWith("https://")) {
+            throw IllegalArgumentException("皮肤 package_url 不是安全 HTTPS 链接")
+        }
+        return remotePackageFetcher?.invoke(normalizedUrl)
+            ?: throw IllegalArgumentException("皮肤 JSON 需要下载 package_url，请检查网络后重试")
     }
 
     private fun selectThemeJsonOrNull(entries: Map<String, ByteArray>): ByteArray? {
@@ -135,20 +184,27 @@ object UiSkinImportPackageResolver {
     private fun parseThemeJson(bytes: ByteArray): BilibiliSkinTheme {
         val root = json.parseToJsonElement(bytes.decodeToString()).jsonObject
         val dataObject = root.objectOrNull("data")
-        val properties = dataObject?.objectOrNull("properties")
+        val themeObject = root.resolveThemeObject()
+        val properties = themeObject?.objectOrNull("properties")
+            ?: dataObject?.objectOrNull("properties")
             ?: root.objectOrNull("properties")
+            ?: themeObject
             ?: dataObject
             ?: JsonObject(emptyMap())
-        val id = root.stringOrNull("item_id")
+        val id = themeObject?.stringOrNull("item_id")
+            ?: themeObject?.stringOrNull("id")
+            ?: root.stringOrNull("item_id")
             ?: root.stringOrNull("id")
             ?: dataObject?.stringOrNull("item_id")
             ?: dataObject?.stringOrNull("id")
             ?: properties.stringOrNull("item_id")
             ?: properties.stringOrNull("id")
-        val name = root.stringOrNull("name")
+        val name = themeObject?.stringOrNull("name")
+            ?: root.stringOrNull("name")
             ?: dataObject?.stringOrNull("name")
             ?: "Bilibili Skin"
-        val version = root.stringOrNull("ver")
+        val version = themeObject?.stringOrNull("ver")
+            ?: root.stringOrNull("ver")
             ?: properties.stringOrNull("ver")
             ?: dataObject?.stringOrNull("ver")
             ?: "1.0.0"
@@ -160,6 +216,23 @@ object UiSkinImportPackageResolver {
             colorSecondPage = properties.stringOrNull("color_second_page"),
             tailColor = properties.stringOrNull("tail_color")
         )
+    }
+
+    private fun looksLikeJson(bytes: ByteArray): Boolean {
+        return bytes.decodeToString().trimStart().startsWith("{")
+    }
+
+    private fun ByteArray.packageUrlOrNull(): String? {
+        val root = runCatching { json.parseToJsonElement(decodeToString()).jsonObject }.getOrNull()
+            ?: return null
+        val dataObject = root.objectOrNull("data")
+        val themeObject = root.resolveThemeObject()
+        return themeObject?.stringOrNull("package_url")
+            ?: themeObject?.stringOrNull("packageUrl")
+            ?: dataObject?.stringOrNull("package_url")
+            ?: dataObject?.stringOrNull("packageUrl")
+            ?: root.stringOrNull("package_url")
+            ?: root.stringOrNull("packageUrl")
     }
 
     private fun buildAssetBytes(packageEntries: Map<String, ByteArray>): Map<String, ByteArray> {
@@ -320,6 +393,13 @@ object UiSkinImportPackageResolver {
     private fun JsonObject.stringOrNull(key: String): String? {
         val primitive = get(key)?.jsonPrimitive ?: return null
         return primitive.contentOrNull ?: primitive.booleanOrNull?.toString()
+    }
+
+    private fun JsonObject.resolveThemeObject(): JsonObject? {
+        val dataObject = objectOrNull("data")
+        return dataObject?.objectOrNull("user_equip")
+            ?: objectOrNull("user_equip")
+            ?: dataObject
     }
 
     private fun String.parentName(): String {

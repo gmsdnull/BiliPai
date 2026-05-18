@@ -518,6 +518,7 @@ fun DynamicCardV2(
                 icon = io.github.alexzhirkevich.cupertino.icons.CupertinoIcons.Default.ArrowTurnUpRight,
                 count = statModule.forward.count,
                 label = "转发",
+                enabled = !statModule.forward.forbidden,
                 onClick = { onRepostClick(item.id_str) },
                 modifier = Modifier.weight(actionButtonWeight)
             )
@@ -527,6 +528,7 @@ fun DynamicCardV2(
                 icon = io.github.alexzhirkevich.cupertino.icons.CupertinoIcons.Default.Message,
                 count = statModule.comment.count,
                 label = "评论",
+                enabled = !statModule.comment.forbidden,
                 onClick = { onCommentClick(item.id_str) },
                 modifier = Modifier.weight(actionButtonWeight)
             )

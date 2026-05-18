@@ -33,6 +33,7 @@ import com.android.purebilibili.core.plugin.ExternalPluginInstallDecision
 import com.android.purebilibili.core.plugin.evaluateExternalPluginInstall
 import com.android.purebilibili.core.plugin.kotlinpkg.ExternalKotlinPluginInstallStore
 import com.android.purebilibili.core.plugin.kotlinpkg.ExternalKotlinPluginPackagePreview
+import com.android.purebilibili.core.network.NetworkModule
 import com.android.purebilibili.core.plugin.skin.UiSkinImportPackageResolver
 import com.android.purebilibili.core.plugin.skin.UiSkinInstallStore
 import com.android.purebilibili.core.plugin.skin.UiSkinPackagePreview
@@ -60,6 +61,7 @@ import com.android.purebilibili.feature.settings.buildUiSkinPackagePreview
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.Request
 
 internal suspend fun dispatchBuiltInPluginToggle(
     pluginId: String,
@@ -71,6 +73,19 @@ internal suspend fun dispatchBuiltInPluginToggle(
         onSponsorBlockToggle(enabled)
     } else {
         onGenericPluginToggle(pluginId, enabled)
+    }
+}
+
+internal fun downloadUiSkinRemotePackage(url: String): ByteArray {
+    val request = Request.Builder()
+        .url(url)
+        .header("User-Agent", "BiliPai")
+        .build()
+    NetworkModule.okHttpClient.newCall(request).execute().use { response ->
+        if (!response.isSuccessful) {
+            throw IllegalArgumentException("皮肤资源下载失败: HTTP ${response.code}")
+        }
+        return response.body.bytes()
     }
 }
 
@@ -203,7 +218,10 @@ fun PluginsContent(
                 runCatching {
                     val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
                         ?: throw IllegalArgumentException("无法读取皮肤包")
-                    val importPackage = UiSkinImportPackageResolver.resolve(bytes).getOrThrow()
+                    val importPackage = UiSkinImportPackageResolver.resolve(
+                        inputBytes = bytes,
+                        remotePackageFetcher = ::downloadUiSkinRemotePackage
+                    ).getOrThrow()
                     val preview = uiSkinStore.previewPackage(importPackage.packageBytes).getOrThrow()
                     preview to importPackage.packageBytes
                 }

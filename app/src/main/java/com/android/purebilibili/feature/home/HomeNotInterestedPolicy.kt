@@ -10,6 +10,21 @@ internal data class HomeNotInterestedAction(
     val creatorFace: String
 )
 
+internal data class HomeNotInterestedVisualTransition(
+    val shouldStartDissolve: Boolean,
+    val shouldRemoveImmediately: Boolean
+)
+
+internal fun resolveHomeNotInterestedVisualTransition(
+    isFeedbackRecorded: Boolean,
+    isDissolveAnimationAvailable: Boolean
+): HomeNotInterestedVisualTransition {
+    return HomeNotInterestedVisualTransition(
+        shouldStartDissolve = isFeedbackRecorded && isDissolveAnimationAvailable,
+        shouldRemoveImmediately = isFeedbackRecorded && !isDissolveAnimationAvailable
+    )
+}
+
 internal fun resolveHomeNotInterestedAction(video: VideoItem): HomeNotInterestedAction {
     val creatorMid = video.owner.mid
     return HomeNotInterestedAction(

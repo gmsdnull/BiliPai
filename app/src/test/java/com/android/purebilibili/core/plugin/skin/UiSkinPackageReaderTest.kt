@@ -347,6 +347,40 @@ class UiSkinPackageReaderTest {
     }
 
     @Test
+    fun bilibiliSkinDirectOfficialUserEquipJson_downloadsPackageUrlAndConverts() {
+        val packageBytes = skinPackage(
+            "tail_bg.png" to pngBytes(),
+            "head_bg.jpg" to jpegBytes()
+        )
+
+        val importPackage = UiSkinImportPackageResolver.resolve(
+            inputBytes = officialUserEquipJson().toByteArray(),
+            remotePackageFetcher = { url ->
+                assertEquals("https://i0.hdslb.com/bfs/garb/theme_package.zip", url)
+                packageBytes
+            }
+        ).getOrThrow()
+        val preview = UiSkinPackageReader.preview(importPackage.packageBytes).getOrThrow()
+
+        assertEquals(UiSkinImportSource.BILIBILI_SKIN_ARCHIVE, importPackage.source)
+        assertEquals("local.bilibili_skin.778899", preview.manifest.skinId)
+        assertEquals("官方个性主题", preview.manifest.displayName)
+        assertEquals("assets/tail_bg.png", preview.manifest.assets.bottomBarTrim)
+        assertEquals("assets/head_bg.jpg", preview.manifest.assets.topAtmosphere)
+        assertEquals("#223344", preview.manifest.colors.bottomBarTrimTint)
+    }
+
+    @Test
+    fun bilibiliSkinDirectJsonWithoutFetcherReturnsReadablePackageUrlError() {
+        val error = UiSkinImportPackageResolver.resolve(
+            inputBytes = officialUserEquipJson().toByteArray()
+        ).exceptionOrNull()
+
+        assertNotNull(error)
+        assertEquals("皮肤 JSON 需要下载 package_url，请检查网络后重试", error.message)
+    }
+
+    @Test
     fun bilibiliSkinArchiveConversion_isStableForSameInput() {
         val bytes = bilibiliThemeArchive(
             "skin/skin_suit.json" to luotianyiSkinSuitJson().toByteArray(),
@@ -539,6 +573,28 @@ class UiSkinPackageReaderTest {
                 "color": "#000000",
                 "color_second_page": "#51A2F0",
                 "tail_color": "#BEFFE4"
+              }
+            }
+        """.trimIndent()
+    }
+
+    private fun officialUserEquipJson(): String {
+        return """
+            {
+              "code": 0,
+              "data": {
+                "user_equip": {
+                  "item_id": 778899,
+                  "name": "官方个性主题",
+                  "package_url": "https://i0.hdslb.com/bfs/garb/theme_package.zip",
+                  "package_md5": "abc",
+                  "properties": {
+                    "ver": "1774972800",
+                    "color": "#112233",
+                    "color_second_page": "#445566",
+                    "tail_color": "#223344"
+                  }
+                }
               }
             }
         """.trimIndent()

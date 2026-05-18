@@ -90,4 +90,15 @@ class HomeNotInterestedPolicyTest {
 
         assertEquals(listOf("BV_KEEP"), filtered.map { it.bvid })
     }
+
+    @Test
+    fun `not interested starts dissolve before removing card`() {
+        val transition = resolveHomeNotInterestedVisualTransition(
+            isFeedbackRecorded = true,
+            isDissolveAnimationAvailable = true
+        )
+
+        assertTrue(transition.shouldStartDissolve)
+        assertFalse(transition.shouldRemoveImmediately)
+    }
 }

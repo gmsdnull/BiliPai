@@ -62,12 +62,22 @@ internal fun resolveDynamicCardContentPadding(): Dp = 12.dp
 
 internal fun resolveDynamicActionButtonSlotWeight(): Float = 1f
 
-internal fun resolveDynamicActionButtonSpacing(): Dp = 12.dp
+internal fun resolveDynamicActionButtonSpacing(): Dp = 8.dp
 
-internal fun resolveDynamicActionButtonText(label: String, count: Int): String? {
+internal fun resolveDynamicActionButtonText(
+    label: String,
+    count: Int,
+    slotWidthDp: Int? = null
+): String? {
     val countText = if (count > 0) formatDynamicActionCount(count) else null
     return when (label) {
-        "转发", "评论" -> listOfNotNull(label, countText).joinToString(separator = " ")
+        "转发", "评论" -> {
+            if (slotWidthDp != null && slotWidthDp in 1 until 120) {
+                label
+            } else {
+                listOfNotNull(label, countText).joinToString(separator = " ")
+            }
+        }
         else -> countText
     }
 }
