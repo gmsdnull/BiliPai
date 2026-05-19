@@ -236,9 +236,9 @@ class AppNavigationTransitionPolicyTest {
     }
 
     @Test
-    fun videoPushEnterAction_classicBackWithSharedReady_usesNoOpForSharedBounds() {
+    fun videoPushEnterAction_classicBackWithSharedReady_usesHeroExpandFade() {
         assertEquals(
-            VideoPushEnterAction.NO_OP,
+            VideoPushEnterAction.HERO_EXPAND_FADE,
             resolveVideoPushEnterAction(
                 cardTransitionEnabled = true,
                 predictiveBackAnimationEnabled = false,
@@ -264,9 +264,9 @@ class AppNavigationTransitionPolicyTest {
     }
 
     @Test
-    fun videoPushEnterAction_predictiveBackWithSharedReady_usesNoOpForSharedBounds() {
+    fun videoPushEnterAction_predictiveBack_usesLeftSlide() {
         assertEquals(
-            VideoPushEnterAction.NO_OP,
+            VideoPushEnterAction.LEFT_SLIDE,
             resolveVideoPushEnterAction(
                 cardTransitionEnabled = true,
                 predictiveBackAnimationEnabled = true,
