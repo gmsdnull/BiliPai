@@ -29,7 +29,7 @@ enum class CommentSortMode(val apiMode: Int, val label: String) {
     }
 }
 
-private const val SUB_REPLY_FIRST_PAGE_SIZE = 20
+private const val SUB_REPLY_PAGE_SIZE = 20
 
 // 评论状态
 data class CommentUiState(
@@ -490,8 +490,9 @@ class VideoCommentViewModel : ViewModel() {
                 type = 1,
                 rootId = rootId,
                 page = page,
-                ps = SUB_REPLY_FIRST_PAGE_SIZE,
-                paginationOffset = _subReplyState.value.grpcNextOffset
+                ps = SUB_REPLY_PAGE_SIZE,
+                paginationOffset = _subReplyState.value.grpcNextOffset,
+                preferRestPaging = true
             )
             result.onSuccess { data ->
                 val current = _subReplyState.value

@@ -12,6 +12,7 @@ import com.android.purebilibili.data.model.response.ReplySailingFan
 import com.android.purebilibili.data.model.response.ReplyUserSailing
 import com.android.purebilibili.feature.video.viewmodel.resolveSubReplyLoadedTotalCount
 import com.android.purebilibili.feature.video.viewmodel.resolveSubReplyRemoteTotalCount
+import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -33,23 +34,21 @@ class SubReplyDetailPresentationPolicyTest {
     }
 
     @Test
-    fun `sub reply detail reveal motion keeps blur and expand readable`() {
+    fun `sub reply detail reveal motion stays blur free`() {
         val spec = resolveSubReplyDetailRevealSpec(levelIndex = 2)
-
-        assertEquals(150, spec.delayMillis)
-        assertEquals(300, spec.durationMillis)
-        assertEquals(10f, spec.initialBlurRadiusDp)
-        assertEquals(14, spec.initialOffsetDp)
-    }
-
-    @Test
-    fun `sub reply detail reveal motion can disable blur only`() {
-        val spec = resolveSubReplyDetailRevealSpec(levelIndex = 2, blurEnabled = false)
 
         assertEquals(150, spec.delayMillis)
         assertEquals(300, spec.durationMillis)
         assertEquals(0f, spec.initialBlurRadiusDp)
         assertEquals(14, spec.initialOffsetDp)
+    }
+
+    @Test
+    fun `sub reply detail component does not apply compose blur`() {
+        val source = File("src/main/java/com/android/purebilibili/feature/video/ui/components/SubReplyDetailComponents.kt").readText()
+
+        assertFalse(source.contains(".blur("))
+        assertFalse(source.contains("getCommentSubReplyRevealBlurEnabled"))
     }
 
     @Test

@@ -175,15 +175,10 @@ class SettingsSearchPolicyTest {
     }
 
     @Test
-    fun queryBySubReplyBlur_hitsInteractionCommentEntry() {
+    fun queryBySubReplyBlur_returnsNoRemovedBlurSetting() {
         val results = resolveSettingsSearchResults("楼中楼模糊")
 
-        assertTrue(
-            results.any {
-                it.target == SettingsSearchTarget.INTERACTION_COMMENT ||
-                    it.target == SettingsSearchTarget.PLAYBACK
-            }
-        )
+        assertTrue(results.isEmpty())
     }
 
     @Test

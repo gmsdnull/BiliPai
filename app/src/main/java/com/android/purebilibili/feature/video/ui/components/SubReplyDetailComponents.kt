@@ -4,7 +4,6 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -46,7 +45,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,14 +53,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -80,9 +75,10 @@ import com.android.purebilibili.core.ui.animation.MaybeDissolvableVideoCard
 import com.android.purebilibili.core.ui.common.rememberClipboardCopyHandler
 import com.android.purebilibili.core.ui.rememberAppLikeFilledIcon
 import com.android.purebilibili.core.ui.rememberAppLikeIcon
-import com.android.purebilibili.core.store.SettingsManager
 import com.android.purebilibili.feature.video.viewmodel.CommentUiState
 import com.android.purebilibili.feature.video.viewmodel.SubReplyUiState
+import com.skydoves.orbital.Orbital
+import com.skydoves.orbital.animateBounds
 import io.github.alexzhirkevich.cupertino.CupertinoActivityIndicator
 import io.github.alexzhirkevich.cupertino.icons.CupertinoIcons
 import io.github.alexzhirkevich.cupertino.icons.filled.HandThumbsup
@@ -156,13 +152,12 @@ internal fun resolveSubReplyDetailRevealDelayMillis(levelIndex: Int): Int {
 }
 
 internal fun resolveSubReplyDetailRevealSpec(
-    levelIndex: Int,
-    blurEnabled: Boolean = true
+    levelIndex: Int
 ): SubReplyDetailRevealSpec {
     return SubReplyDetailRevealSpec(
         delayMillis = resolveSubReplyDetailRevealDelayMillis(levelIndex),
         durationMillis = 300,
-        initialBlurRadiusDp = if (blurEnabled) 10f else 0f,
+        initialBlurRadiusDp = 0f,
         initialOffsetDp = 14
     )
 }
@@ -378,10 +373,6 @@ internal fun SubReplyDetailContent(
         resolveSubReplyDetailLayoutPolicy(showRootCommentEntry = false)
     }
     val appearance = rememberVideoCommentAppearance()
-    val context = LocalContext.current
-    val revealBlurEnabled by SettingsManager
-        .getCommentSubReplyRevealBlurEnabled(context)
-        .collectAsState(initial = SettingsManager.DEFAULT_COMMENT_SUB_REPLY_REVEAL_BLUR_ENABLED)
     val unusedShowUpFlag = showUpFlag
     val listState = rememberLazyListState()
     var conversationAnchor by remember(rootReply.rpid) { mutableStateOf<ReplyItem?>(null) }
@@ -477,8 +468,7 @@ internal fun SubReplyDetailContent(
             item(key = "root_reply") {
                 SubReplyDetailStaggeredReveal(
                     revealKey = "root_${listScrollResetKey}",
-                    levelIndex = 0,
-                    blurEnabled = revealBlurEnabled
+                    levelIndex = 0
                 ) {
                     Box(modifier = Modifier.testTag(SUB_REPLY_DETAIL_ROOT_TAG)) {
                         SubReplyDetailItem(
@@ -509,8 +499,7 @@ internal fun SubReplyDetailContent(
                 }
                 SubReplyDetailStaggeredReveal(
                     revealKey = "section_${listScrollResetKey}",
-                    levelIndex = 1,
-                    blurEnabled = revealBlurEnabled
+                    levelIndex = 1
                 ) {
                     Column {
                         HorizontalDivider(thickness = 8.dp, color = appearance.sectionDividerColor)
@@ -583,8 +572,7 @@ internal fun SubReplyDetailContent(
             ) { index, item ->
                 SubReplyDetailStaggeredReveal(
                     revealKey = "reply_${listScrollResetKey}_${item.rpid}",
-                    levelIndex = index + 2,
-                    blurEnabled = revealBlurEnabled
+                    levelIndex = index + 2
                 ) {
                     MaybeDissolvableVideoCard(
                         isDissolving = item.rpid in dissolvingIds,
@@ -1018,58 +1006,41 @@ private fun SubReplyDetailStaggeredReveal(
     revealKey: Any,
     levelIndex: Int,
     modifier: Modifier = Modifier,
-    blurEnabled: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val spec = remember(levelIndex, blurEnabled) {
-        resolveSubReplyDetailRevealSpec(levelIndex, blurEnabled)
-    }
+    val spec = remember(levelIndex) { resolveSubReplyDetailRevealSpec(levelIndex) }
     var visible by remember(revealKey) { mutableStateOf(false) }
-    var blurSettled by remember(revealKey) { mutableStateOf(false) }
-    val density = LocalDensity.current
-    val blurRadiusDp by animateFloatAsState(
-        targetValue = if (visible && blurSettled) 0f else spec.initialBlurRadiusDp,
-        animationSpec = tween(durationMillis = spec.durationMillis),
-        label = "sub_reply_detail_reveal_blur"
-    )
-    val offsetDp by animateFloatAsState(
-        targetValue = if (visible) 0f else spec.initialOffsetDp.toFloat(),
-        animationSpec = tween(durationMillis = spec.durationMillis),
-        label = "sub_reply_detail_reveal_offset"
-    )
 
     LaunchedEffect(revealKey, levelIndex) {
         visible = false
-        blurSettled = false
         delay(spec.delayMillis.toLong())
         visible = true
-        delay(16)
-        blurSettled = true
     }
 
-    AnimatedVisibility(
-        visible = visible,
-        modifier = modifier,
-        enter = fadeIn(animationSpec = tween(durationMillis = spec.durationMillis)) +
-            expandVertically(
-                animationSpec = tween(durationMillis = spec.durationMillis),
-                expandFrom = Alignment.Top
-            ) +
-            slideInVertically(animationSpec = tween(durationMillis = spec.durationMillis)) { height ->
-                height / 5
-            },
-        exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
-            shrinkVertically(animationSpec = tween(durationMillis = 120), shrinkTowards = Alignment.Top)
-    ) {
-        Box(
-            modifier = Modifier
-                .animateContentSize(animationSpec = tween(durationMillis = spec.durationMillis))
-                .graphicsLayer {
-                    translationY = with(density) { offsetDp.dp.toPx() }
-                }
-                .blur(blurRadiusDp.dp)
+    Orbital(modifier = modifier) {
+        AnimatedVisibility(
+            visible = visible,
+            enter = fadeIn(animationSpec = tween(durationMillis = spec.durationMillis)) +
+                expandVertically(
+                    animationSpec = tween(durationMillis = spec.durationMillis),
+                    expandFrom = Alignment.Top
+                ) +
+                slideInVertically(animationSpec = tween(durationMillis = spec.durationMillis)) { height ->
+                    height / 6
+                },
+            exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
+                shrinkVertically(animationSpec = tween(durationMillis = 120), shrinkTowards = Alignment.Top)
         ) {
-            content()
+            Box(
+                modifier = Modifier
+                    .animateBounds(
+                        sizeAnimationSpec = tween(durationMillis = spec.durationMillis),
+                        positionAnimationSpec = tween(durationMillis = spec.durationMillis)
+                    )
+                    .animateContentSize(animationSpec = tween(durationMillis = spec.durationMillis))
+            ) {
+                content()
+            }
         }
     }
 }

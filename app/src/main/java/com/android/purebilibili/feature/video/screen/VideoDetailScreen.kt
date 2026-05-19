@@ -3019,8 +3019,7 @@ fun VideoDetailScreen(
                                                             onCommentClick = {
                                                                 android.util.Log.d("VideoDetailScreen", "📝 Comment input clicked!")
                                                                 viewModel.openRootCommentComposer()
-                                                            },
-                                                            hazeState = hazeState
+                                                            }
                                                         )
                                                     }
 
