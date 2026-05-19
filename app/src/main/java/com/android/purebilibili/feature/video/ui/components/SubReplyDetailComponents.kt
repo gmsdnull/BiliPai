@@ -77,8 +77,6 @@ import com.android.purebilibili.core.ui.rememberAppLikeFilledIcon
 import com.android.purebilibili.core.ui.rememberAppLikeIcon
 import com.android.purebilibili.feature.video.viewmodel.CommentUiState
 import com.android.purebilibili.feature.video.viewmodel.SubReplyUiState
-import com.skydoves.orbital.Orbital
-import com.skydoves.orbital.animateBounds
 import io.github.alexzhirkevich.cupertino.CupertinoActivityIndicator
 import io.github.alexzhirkevich.cupertino.icons.CupertinoIcons
 import io.github.alexzhirkevich.cupertino.icons.filled.HandThumbsup
@@ -1017,30 +1015,25 @@ private fun SubReplyDetailStaggeredReveal(
         visible = true
     }
 
-    Orbital(modifier = modifier) {
-        AnimatedVisibility(
-            visible = visible,
-            enter = fadeIn(animationSpec = tween(durationMillis = spec.durationMillis)) +
-                expandVertically(
-                    animationSpec = tween(durationMillis = spec.durationMillis),
-                    expandFrom = Alignment.Top
-                ) +
-                slideInVertically(animationSpec = tween(durationMillis = spec.durationMillis)) { height ->
-                    height / 6
-                },
-            exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
-                shrinkVertically(animationSpec = tween(durationMillis = 120), shrinkTowards = Alignment.Top)
+    AnimatedVisibility(
+        visible = visible,
+        modifier = modifier,
+        enter = fadeIn(animationSpec = tween(durationMillis = spec.durationMillis)) +
+            expandVertically(
+                animationSpec = tween(durationMillis = spec.durationMillis),
+                expandFrom = Alignment.Top
+            ) +
+            slideInVertically(animationSpec = tween(durationMillis = spec.durationMillis)) { height ->
+                height / 6
+            },
+        exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
+            shrinkVertically(animationSpec = tween(durationMillis = 120), shrinkTowards = Alignment.Top)
+    ) {
+        Box(
+            modifier = Modifier
+                .animateContentSize(animationSpec = tween(durationMillis = spec.durationMillis))
         ) {
-            Box(
-                modifier = Modifier
-                    .animateBounds(
-                        sizeAnimationSpec = tween(durationMillis = spec.durationMillis),
-                        positionAnimationSpec = tween(durationMillis = spec.durationMillis)
-                    )
-                    .animateContentSize(animationSpec = tween(durationMillis = spec.durationMillis))
-            ) {
-                content()
-            }
+            content()
         }
     }
 }

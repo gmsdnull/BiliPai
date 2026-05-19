@@ -49,6 +49,7 @@ class SubReplyDetailPresentationPolicyTest {
 
         assertFalse(source.contains(".blur("))
         assertFalse(source.contains("getCommentSubReplyRevealBlurEnabled"))
+        assertFalse(source.contains("animateBounds"))
     }
 
     @Test
