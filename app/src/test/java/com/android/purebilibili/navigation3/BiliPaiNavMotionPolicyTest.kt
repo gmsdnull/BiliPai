@@ -44,7 +44,7 @@ class BiliPaiNavMotionPolicyTest {
     }
 
     @Test
-    fun sharedElementReady_homeVideoForward_prefersNoOpRouteLayer() {
+    fun sharedElementReady_homeVideoForward_prefersSheetRouteLayer() {
         val decision = resolveBiliPaiNavMotionDecision(
             fromKey = BiliPaiNavKey.Home,
             toKey = BiliPaiNavKey.VideoDetail("BV1", sourceRoute = "home"),
@@ -53,7 +53,7 @@ class BiliPaiNavMotionPolicyTest {
             sharedTransitionReady = true
         )
 
-        assertEquals(BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT, decision.routeTransition)
+        assertEquals(BiliPaiNavRouteTransition.HOME_VIDEO_SHEET_FORWARD, decision.routeTransition)
         assertTrue(decision.interceptSystemBack)
     }
 

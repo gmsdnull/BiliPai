@@ -8,6 +8,8 @@ internal enum class BiliPaiNavMotionMode {
 
 internal enum class BiliPaiNavRouteTransition {
     NO_OP_SHARED_ELEMENT,
+    HOME_VIDEO_SHEET_FORWARD,
+    HOME_VIDEO_SHEET_RETURN,
     PREDICTIVE_PROGRESS,
     CLASSIC_CARD,
     FALLBACK
@@ -49,7 +51,14 @@ internal fun resolveBiliPaiNavMotionDecision(
     val isCardToVideoForward = fromKey != null &&
         isCardReturnTargetNavKey(fromKey) &&
         toKey is BiliPaiNavKey.VideoDetail
+    val isHomeVideoForward = fromKey is BiliPaiNavKey.Home &&
+        toKey is BiliPaiNavKey.VideoDetail &&
+        toKey.sourceRoute?.substringBefore("?") == "home"
     val routeTransition = when {
+        cardTransitionEnabled &&
+            sharedTransitionReady &&
+            isHomeVideoForward ->
+            BiliPaiNavRouteTransition.HOME_VIDEO_SHEET_FORWARD
         cardTransitionEnabled &&
             sharedTransitionReady &&
             (isVideoToCardReturn || isCardToVideoForward) ->

@@ -445,6 +445,22 @@ internal data class VideoDetailEntryVisualFrame(
     val blurRadiusPx: Float
 )
 
+internal data class VideoDetailRouteSheetMotion(
+    val enabled: Boolean,
+    val durationMillis: Int,
+    val initialScale: Float,
+    val initialTranslationYDp: Float,
+    val initialCornerDp: Float,
+    val initialBackgroundScrimAlpha: Float
+)
+
+internal data class VideoDetailRouteSheetFrame(
+    val scale: Float,
+    val translationYDp: Float,
+    val cornerDp: Float,
+    val backgroundScrimAlpha: Float
+)
+
 internal data class VideoDetailMotionSpec(
     val entryPhaseDurationMillis: Int,
     val contentSwapFadeDurationMillis: Int,
@@ -453,6 +469,11 @@ internal data class VideoDetailMotionSpec(
 
 private const val VIDEO_DETAIL_ENTRY_PHASE_MIN_DURATION_MILLIS = 120
 private const val VIDEO_DETAIL_CONTENT_PHASE_MIN_DURATION_MILLIS = 180
+private const val HOME_VIDEO_ROUTE_SHEET_DURATION_MILLIS = 360
+private const val HOME_VIDEO_ROUTE_SHEET_INITIAL_SCALE = 0.965f
+private const val HOME_VIDEO_ROUTE_SHEET_INITIAL_TRANSLATION_Y_DP = 56f
+private const val HOME_VIDEO_ROUTE_SHEET_INITIAL_CORNER_DP = 28f
+private const val HOME_VIDEO_ROUTE_SHEET_INITIAL_SCRIM_ALPHA = 0.18f
 
 internal fun resolveVideoDetailMotionSpec(
     transitionEnterDurationMillis: Int
@@ -464,6 +485,77 @@ internal fun resolveVideoDetailMotionSpec(
             .coerceAtLeast(VIDEO_DETAIL_CONTENT_PHASE_MIN_DURATION_MILLIS),
         contentRevealFadeDurationMillis = transitionEnterDurationMillis
             .coerceAtLeast(VIDEO_DETAIL_CONTENT_PHASE_MIN_DURATION_MILLIS)
+    )
+}
+
+internal fun resolveVideoDetailRouteSheetMotion(
+    sourceRoute: String?,
+    transitionEnabled: Boolean
+): VideoDetailRouteSheetMotion {
+    val isHomeSource = sourceRoute?.substringBefore("?") == com.android.purebilibili.navigation.ScreenRoutes.Home.route
+    val enabled = transitionEnabled && isHomeSource
+    return VideoDetailRouteSheetMotion(
+        enabled = enabled,
+        durationMillis = HOME_VIDEO_ROUTE_SHEET_DURATION_MILLIS,
+        initialScale = HOME_VIDEO_ROUTE_SHEET_INITIAL_SCALE,
+        initialTranslationYDp = HOME_VIDEO_ROUTE_SHEET_INITIAL_TRANSLATION_Y_DP,
+        initialCornerDp = HOME_VIDEO_ROUTE_SHEET_INITIAL_CORNER_DP,
+        initialBackgroundScrimAlpha = HOME_VIDEO_ROUTE_SHEET_INITIAL_SCRIM_ALPHA
+    )
+}
+
+internal fun resolveVideoDetailRouteSheetFrame(
+    rawProgress: Float,
+    motion: VideoDetailRouteSheetMotion
+): VideoDetailRouteSheetFrame {
+    if (!motion.enabled) {
+        return VideoDetailRouteSheetFrame(
+            scale = 1f,
+            translationYDp = 0f,
+            cornerDp = 0f,
+            backgroundScrimAlpha = 0f
+        )
+    }
+    val progress = rawProgress.coerceIn(0f, 1f)
+    return VideoDetailRouteSheetFrame(
+        scale = lerpVideoDetailFloat(motion.initialScale, 1f, progress),
+        translationYDp = lerpVideoDetailFloat(motion.initialTranslationYDp, 0f, progress),
+        cornerDp = lerpVideoDetailFloat(motion.initialCornerDp, 0f, progress),
+        backgroundScrimAlpha = lerpVideoDetailFloat(motion.initialBackgroundScrimAlpha, 0f, progress)
+    )
+}
+
+private fun lerpVideoDetailFloat(start: Float, stop: Float, fraction: Float): Float {
+    return start + (stop - start) * fraction
+}
+
+@Composable
+private fun VideoDetailRouteSheetHost(
+    frame: VideoDetailRouteSheetFrame,
+    motion: VideoDetailRouteSheetMotion,
+    isFullscreenMode: Boolean,
+    backgroundColor: Color,
+    content: @Composable BoxScope.() -> Unit
+) {
+    val routeSheetTranslationYPx = with(LocalDensity.current) {
+        frame.translationYDp.dp.toPx()
+    }
+    val routeSheetShape = RoundedCornerShape(frame.cornerDp.dp)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = frame.backgroundScrimAlpha))
+            .graphicsLayer {
+                scaleX = frame.scale
+                scaleY = frame.scale
+                translationY = routeSheetTranslationYPx
+                transformOrigin = TransformOrigin(0.5f, 0f)
+                clip = motion.enabled && frame.cornerDp > 0.01f
+                shape = routeSheetShape
+            }
+            .background(if (isFullscreenMode) Color.Black else backgroundColor),
+        content = content
     )
 }
 
@@ -750,6 +842,12 @@ fun VideoDetailScreen(
     }
     val homeSharedTransitionCornerSpec = remember(sourceRouteForSharedElement, transitionEnabled) {
         resolveHomeVideoSharedTransitionCornerSpec(
+            sourceRoute = sourceRouteForSharedElement,
+            transitionEnabled = transitionEnabled
+        )
+    }
+    val routeSheetMotion = remember(sourceRouteForSharedElement, transitionEnabled) {
+        resolveVideoDetailRouteSheetMotion(
             sourceRoute = sourceRouteForSharedElement,
             transitionEnabled = transitionEnabled
         )
@@ -1225,6 +1323,33 @@ fun VideoDetailScreen(
     val rootAnimatedVisibilityScope = LocalAnimatedVisibilityScope.current
     val isExitTransitionInProgress =
         rootAnimatedVisibilityScope?.transition?.targetState == EnterExitState.PostExit
+    val routeSheetProgress = remember(routeSheetMotion.enabled) {
+        Animatable(if (routeSheetMotion.enabled) 0f else 1f)
+    }
+    LaunchedEffect(
+        routeSheetMotion.enabled,
+        routeSheetMotion.durationMillis,
+        isExitTransitionInProgress
+    ) {
+        if (!routeSheetMotion.enabled) {
+            routeSheetProgress.snapTo(1f)
+            return@LaunchedEffect
+        }
+        val targetProgress = if (isExitTransitionInProgress) 0f else 1f
+        routeSheetProgress.animateTo(
+            targetValue = targetProgress,
+            animationSpec = tween(
+                durationMillis = routeSheetMotion.durationMillis,
+                easing = FastOutSlowInEasing
+            )
+        )
+    }
+    val routeSheetFrame = remember(routeSheetProgress.value, routeSheetMotion) {
+        resolveVideoDetailRouteSheetFrame(
+            rawProgress = routeSheetProgress.value,
+            motion = routeSheetMotion
+        )
+    }
     val coverTakeoverBeforeBackDelayMillis = remember {
         resolveCoverTakeoverDelayBeforeBackNavigationMillis()
     }
@@ -2374,10 +2499,11 @@ fun VideoDetailScreen(
             )
     var selectedVideoContentTabIndex by rememberSaveable(currentBvid) { mutableIntStateOf(0) }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(if (isFullscreenMode) Color.Black else MaterialTheme.colorScheme.background)
+    VideoDetailRouteSheetHost(
+        frame = routeSheetFrame,
+        motion = routeSheetMotion,
+        isFullscreenMode = isFullscreenMode,
+        backgroundColor = MaterialTheme.colorScheme.background
     ) {
         // 📐 [平板适配] 全屏模式过渡动画（只有手机横屏才进入全屏）
         if (isFullscreenMode) {

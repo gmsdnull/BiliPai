@@ -23,7 +23,7 @@ class BiliPaiNavEntryProviderPolicyTest {
     }
 
     @Test
-    fun sharedReadyVideoPushDisablesForwardRouteLayer() {
+    fun homeVideoPushUsesSheetRouteLayerWithRecordedBounds() {
         val transitions = resolveBiliPaiNavEntryRouteTransitions(
             key = BiliPaiNavKey.VideoDetail(bvid = "BV1", sourceRoute = "home"),
             sourceMetadata = BiliPaiNavSourceMetadata(
@@ -34,13 +34,13 @@ class BiliPaiNavEntryProviderPolicyTest {
             )
         )
 
-        assertEquals(BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT, transitions.forward)
-        assertEquals(BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT, transitions.pop)
-        assertEquals(BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT, transitions.predictivePop)
+        assertEquals(BiliPaiNavRouteTransition.HOME_VIDEO_SHEET_FORWARD, transitions.forward)
+        assertEquals(BiliPaiNavRouteTransition.HOME_VIDEO_SHEET_RETURN, transitions.pop)
+        assertEquals(BiliPaiNavRouteTransition.HOME_VIDEO_SHEET_RETURN, transitions.predictivePop)
     }
 
     @Test
-    fun videoPushWithoutSharedReadyKeepsForwardFallback() {
+    fun homeVideoPushWithTopChromeOverlapStillUsesSheetWhenBoundsAreRecorded() {
         val transitions = resolveBiliPaiNavEntryRouteTransitions(
             key = BiliPaiNavKey.VideoDetail(bvid = "BV1", sourceRoute = "home"),
             sourceMetadata = BiliPaiNavSourceMetadata(
@@ -48,6 +48,23 @@ class BiliPaiNavEntryProviderPolicyTest {
                 sourceRoute = "home",
                 clickedBoundsRecorded = true,
                 cardFullyVisible = false
+            )
+        )
+
+        assertEquals(BiliPaiNavRouteTransition.HOME_VIDEO_SHEET_FORWARD, transitions.forward)
+        assertEquals(BiliPaiNavRouteTransition.HOME_VIDEO_SHEET_RETURN, transitions.pop)
+        assertEquals(BiliPaiNavRouteTransition.HOME_VIDEO_SHEET_RETURN, transitions.predictivePop)
+    }
+
+    @Test
+    fun homeVideoPushWithoutRecordedBoundsKeepsForwardFallback() {
+        val transitions = resolveBiliPaiNavEntryRouteTransitions(
+            key = BiliPaiNavKey.VideoDetail(bvid = "BV1", sourceRoute = "home"),
+            sourceMetadata = BiliPaiNavSourceMetadata(
+                sourceKey = "home:BV1",
+                sourceRoute = "home",
+                clickedBoundsRecorded = false,
+                cardFullyVisible = true
             )
         )
 

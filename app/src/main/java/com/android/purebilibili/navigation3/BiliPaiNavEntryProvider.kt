@@ -102,21 +102,25 @@ internal fun resolveBiliPaiNavEntryRouteTransitions(
     key: BiliPaiNavKey,
     sourceMetadata: BiliPaiNavSourceMetadata
 ): BiliPaiNavEntryRouteTransitions {
-    val sharedReadyVideoPush = key is BiliPaiNavKey.VideoDetail &&
-        sourceMetadata.sharedTransitionReady &&
+    val recordedMatchingVideoSource = key is BiliPaiNavKey.VideoDetail &&
+        sourceMetadata.clickedBoundsRecorded &&
         sourceMetadata.sourceRoute != null &&
         sourceMetadata.sourceRoute == key.sourceRoute &&
         sourceMetadata.sourceKey == "${sourceMetadata.sourceRoute}:${key.bvid}"
+    val sharedReadyVideoPush = recordedMatchingVideoSource &&
+        sourceMetadata.sharedTransitionReady
+    val homeVideoSheetPush = recordedMatchingVideoSource &&
+        sourceMetadata.sourceRoute == "home"
     val noOpReturn = key is BiliPaiNavKey.VideoDetail || sourceMetadata.sharedTransitionReady
-    val forward = if (sharedReadyVideoPush) {
-        BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT
-    } else {
-        BiliPaiNavRouteTransition.FALLBACK
+    val forward = when {
+        homeVideoSheetPush -> BiliPaiNavRouteTransition.HOME_VIDEO_SHEET_FORWARD
+        sharedReadyVideoPush -> BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT
+        else -> BiliPaiNavRouteTransition.FALLBACK
     }
-    val pop = if (noOpReturn) {
-        BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT
-    } else {
-        BiliPaiNavRouteTransition.FALLBACK
+    val pop = when {
+        homeVideoSheetPush -> BiliPaiNavRouteTransition.HOME_VIDEO_SHEET_RETURN
+        noOpReturn -> BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT
+        else -> BiliPaiNavRouteTransition.FALLBACK
     }
     return BiliPaiNavEntryRouteTransitions(
         forward = forward,
