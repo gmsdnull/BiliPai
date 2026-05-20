@@ -60,9 +60,11 @@ import com.android.purebilibili.core.ui.LocalAnimatedVisibilityScope
 import com.android.purebilibili.core.ui.LocalSharedTransitionScope
 import com.android.purebilibili.core.ui.adaptive.MotionTier
 import com.android.purebilibili.core.ui.components.UpBadgeName
+import com.android.purebilibili.core.ui.transition.LocalVideoCardSharedElementSourceRoute
 import com.android.purebilibili.core.ui.transition.VIDEO_SHARED_COVER_ASPECT_RATIO
 import com.android.purebilibili.core.ui.transition.shouldEnableVideoCoverSharedTransition
 import com.android.purebilibili.core.ui.transition.shouldEnableVideoMetadataSharedTransition
+import com.android.purebilibili.core.ui.transition.videoCardShellSharedElementKey
 import com.android.purebilibili.core.util.CardPositionManager
 import com.android.purebilibili.core.util.FormatUtils
 import com.android.purebilibili.core.util.HapticType
@@ -100,6 +102,7 @@ fun CinematicVideoCard(
     animationEnabled: Boolean = true,
     motionTier: MotionTier = MotionTier.Normal,
     transitionEnabled: Boolean = false,
+    sharedElementSourceRoute: String? = null,
     isReturningFromVideoDetail: Boolean = false,
     isQuickReturningFromVideoDetail: Boolean = false,
     isDataSaverActive: Boolean = false,
@@ -133,12 +136,18 @@ fun CinematicVideoCard(
     val densityValue = density.density
     // 记录卡片位置（非 Compose State，避免滚动时触发高频重组）
     val cardBoundsRef = remember { object { var value: androidx.compose.ui.geometry.Rect? = null } }
+    val localSharedElementSourceRoute = LocalVideoCardSharedElementSourceRoute.current
+    val effectiveSharedElementSourceRoute = remember(sharedElementSourceRoute, localSharedElementSourceRoute) {
+        sharedElementSourceRoute ?: localSharedElementSourceRoute
+    }
     val triggerCardClick = {
         cardBoundsRef.value?.let { bounds ->
-            CardPositionManager.recordCardPosition(
-                bounds,
-                screenWidthPx,
-                screenHeightPx,
+            CardPositionManager.recordVideoCardPosition(
+                bvid = video.bvid,
+                sourceRoute = effectiveSharedElementSourceRoute,
+                bounds = bounds,
+                screenWidth = screenWidthPx,
+                screenHeight = screenHeightPx,
                 density = densityValue
             )
         }
@@ -214,7 +223,12 @@ fun CinematicVideoCard(
             val finalCoverModifier = if (coverSharedEnabled) {
                 with(requireNotNull(sharedTransitionScope)) {
                     coverModifier.sharedBounds(
-                        sharedContentState = rememberSharedContentState(key = com.android.purebilibili.core.ui.transition.videoCoverSharedElementKey(video.bvid)),
+                        sharedContentState = rememberSharedContentState(
+                            key = videoCardShellSharedElementKey(
+                                video.bvid,
+                                sourceRoute = effectiveSharedElementSourceRoute
+                            )
+                        ),
                         animatedVisibilityScope = requireNotNull(animatedVisibilityScope),
                         boundsTransform = { _, _ -> com.android.purebilibili.core.theme.AnimationSpecs.BiliPaiSpringSpec },
                         clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(cardCornerRadius))

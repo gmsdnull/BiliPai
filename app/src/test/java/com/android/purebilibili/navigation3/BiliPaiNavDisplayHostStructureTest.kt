@@ -14,6 +14,7 @@ class BiliPaiNavDisplayHostStructureTest {
         assertTrue(source.contains("entryProvider"))
         assertTrue(source.contains("LocalNavAnimatedContentScope.current"))
         assertTrue(source.contains("ProvideAnimatedVisibilityScope("))
+        assertTrue(source.contains("LocalVideoCardSharedElementSourceRoute provides key.toLegacyRoute()"))
         assertTrue(source.contains("sharedTransitionScope = sharedTransitionScope"))
         assertTrue(source.contains("predictivePopTransitionSpec"))
     }

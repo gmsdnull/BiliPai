@@ -3,6 +3,7 @@ package com.android.purebilibili.navigation3
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
@@ -10,6 +11,7 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.android.purebilibili.core.ui.ProvideAnimatedVisibilityScope
+import com.android.purebilibili.core.ui.transition.LocalVideoCardSharedElementSourceRoute
 
 @Composable
 internal fun BiliPaiNavDisplayHost(
@@ -29,7 +31,11 @@ internal fun BiliPaiNavDisplayHost(
             ProvideAnimatedVisibilityScope(
                 animatedVisibilityScope = LocalNavAnimatedContentScope.current
             ) {
-                content(key)
+                CompositionLocalProvider(
+                    LocalVideoCardSharedElementSourceRoute provides key.toLegacyRoute()
+                ) {
+                    content(key)
+                }
             }
         }
     }

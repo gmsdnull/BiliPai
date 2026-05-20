@@ -70,6 +70,56 @@ class VideoSharedTransitionPolicyTest {
     }
 
     @Test
+    fun videoCardShellKey_keepsSourceRouteDistinctFromCoverKey() {
+        val shellKey = videoCardShellSharedElementKey(
+            bvid = "BV1",
+            sourceRoute = "history"
+        )
+        val coverKey = videoCoverSharedElementKey(
+            bvid = "BV1",
+            sourceRoute = "history"
+        )
+
+        assertEquals(VideoSharedElement.CARD_SHELL, shellKey.element)
+        assertEquals("history", shellKey.sourceRoute)
+        assertFalse(shellKey == coverKey)
+    }
+
+    @Test
+    fun returnReboundOnlyRunsForMatchingVisibleSourceCard() {
+        assertTrue(
+            shouldPlayVideoCardReturnRebound(
+                cardBvid = "BV1",
+                cardSourceRoute = "history",
+                returningSourceKey = "history:BV1",
+                returningSourceRoute = "history",
+                isReturningFromDetail = true,
+                sharedTransitionReady = true
+            )
+        )
+        assertFalse(
+            shouldPlayVideoCardReturnRebound(
+                cardBvid = "BV2",
+                cardSourceRoute = "history",
+                returningSourceKey = "history:BV1",
+                returningSourceRoute = "history",
+                isReturningFromDetail = true,
+                sharedTransitionReady = true
+            )
+        )
+        assertFalse(
+            shouldPlayVideoCardReturnRebound(
+                cardBvid = "BV1",
+                cardSourceRoute = null,
+                returningSourceKey = "history:BV1",
+                returningSourceRoute = "history",
+                isReturningFromDetail = true,
+                sharedTransitionReady = true
+            )
+        )
+    }
+
+    @Test
     fun nonHomeVideoTransition_keepsMetadataSharedBoundsWhenAvailable() {
         val policy = resolveVideoSharedTransitionOwnership(
             sourceRoute = "search",
@@ -117,8 +167,8 @@ class VideoSharedTransitionPolicyTest {
             transitionEnabled = true
         )
 
-        assertFalse(motion.enabled)
-        assertEquals(0, motion.durationMillis)
+        assertTrue(motion.enabled)
+        assertEquals(360, motion.durationMillis)
     }
 
     @Test

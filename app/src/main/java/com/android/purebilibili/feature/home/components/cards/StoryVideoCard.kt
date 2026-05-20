@@ -49,9 +49,11 @@ import com.android.purebilibili.core.theme.iOSCornerRadius
 import com.android.purebilibili.core.ui.adaptive.MotionTier
 import com.android.purebilibili.core.ui.components.UpBadgeName
 import com.android.purebilibili.core.ui.components.resolveUpStatsText
+import com.android.purebilibili.core.ui.transition.LocalVideoCardSharedElementSourceRoute
 import com.android.purebilibili.core.ui.transition.VIDEO_SHARED_COVER_ASPECT_RATIO
 import com.android.purebilibili.core.ui.transition.shouldEnableVideoCoverSharedTransition
 import com.android.purebilibili.core.ui.transition.shouldEnableVideoMetadataSharedTransition
+import com.android.purebilibili.core.ui.transition.videoCardShellSharedElementKey
 import com.android.purebilibili.feature.home.resolveHomeCardEnterAnimationEnabledAtMount
 import com.android.purebilibili.feature.video.ui.section.resolvePublishTimeRowText
 import com.android.purebilibili.feature.video.ui.section.shouldEmphasizePrecisePublishTime
@@ -75,6 +77,7 @@ fun StoryVideoCard(
     animationEnabled: Boolean = true,  //  卡片动画开关
     motionTier: MotionTier = MotionTier.Normal,
     transitionEnabled: Boolean = false, //  卡片过渡动画开关
+    sharedElementSourceRoute: String? = null,
     isReturningFromVideoDetail: Boolean = false,
     isQuickReturningFromVideoDetail: Boolean = false,
     scrollLiteModeEnabled: Boolean = false,
@@ -157,15 +160,21 @@ fun StoryVideoCard(
     val density = LocalDensity.current
     val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
     val screenHeightPx = with(density) { configuration.screenHeightDp.dp.toPx() }
+    val localSharedElementSourceRoute = LocalVideoCardSharedElementSourceRoute.current
+    val effectiveSharedElementSourceRoute = remember(sharedElementSourceRoute, localSharedElementSourceRoute) {
+        sharedElementSourceRoute ?: localSharedElementSourceRoute
+    }
     
     //  记录卡片位置
     var cardBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
     val triggerCardClick = {
         cardBounds?.let { bounds ->
-            CardPositionManager.recordCardPosition(
-                bounds,
-                screenWidthPx,
-                screenHeightPx,
+            CardPositionManager.recordVideoCardPosition(
+                bvid = video.bvid,
+                sourceRoute = effectiveSharedElementSourceRoute,
+                bounds = bounds,
+                screenWidth = screenWidthPx,
+                screenHeight = screenHeightPx,
                 isSingleColumn = !transitionEnabled
             )
         }
@@ -190,7 +199,12 @@ fun StoryVideoCard(
         with(requireNotNull(sharedTransitionScope)) {
             Modifier
                 .sharedBounds(
-                    sharedContentState = rememberSharedContentState(key = com.android.purebilibili.core.ui.transition.videoCoverSharedElementKey(video.bvid)),
+                    sharedContentState = rememberSharedContentState(
+                        key = videoCardShellSharedElementKey(
+                            video.bvid,
+                            sourceRoute = effectiveSharedElementSourceRoute
+                        )
+                    ),
                     animatedVisibilityScope = requireNotNull(animatedVisibilityScope),
                     boundsTransform = { _, _ -> com.android.purebilibili.core.theme.AnimationSpecs.BiliPaiSpringSpec },
                     clipInOverlayDuringTransition = OverlayClip(

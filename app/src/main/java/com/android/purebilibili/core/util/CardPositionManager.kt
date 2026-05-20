@@ -33,6 +33,9 @@ object CardPositionManager {
      */
     var lastClickedCardCenter: Offset? = null
         private set
+
+    var lastClickedVideoSourceKey: String? = null
+        private set
     
     /**
      *  是否是单列卡片（故事卡片）
@@ -71,6 +74,7 @@ object CardPositionManager {
         density: Float = 3f,
         bottomBarHeightDp: Float = 80f  //  底部导航栏默认高度
     ) {
+        lastClickedVideoSourceKey = null
         lastClickedCardBounds = bounds
         lastScreenDensity = density
         isSingleColumnCard = isSingleColumn
@@ -94,6 +98,33 @@ object CardPositionManager {
             y = visibleCenterY / screenHeight  //  使用可见部分的中心 Y
         )
     }
+
+    fun recordVideoCardPosition(
+        bvid: String,
+        sourceRoute: String?,
+        bounds: Rect,
+        screenWidth: Float,
+        screenHeight: Float,
+        isSingleColumn: Boolean = false,
+        density: Float = 3f,
+        bottomBarHeightDp: Float = 80f
+    ) {
+        recordCardPosition(
+            bounds = bounds,
+            screenWidth = screenWidth,
+            screenHeight = screenHeight,
+            isSingleColumn = isSingleColumn,
+            density = density,
+            bottomBarHeightDp = bottomBarHeightDp
+        )
+        val normalizedBvid = bvid.trim()
+        val normalizedRoute = sourceRoute?.substringBefore("?")?.takeIf { it.isNotBlank() }
+        lastClickedVideoSourceKey = if (normalizedBvid.isNotEmpty() && normalizedRoute != null) {
+            "$normalizedRoute:$normalizedBvid"
+        } else {
+            null
+        }
+    }
     
     /**
      * 清除记录的位置
@@ -101,6 +132,7 @@ object CardPositionManager {
     fun clear() {
         lastClickedCardBounds = null
         lastClickedCardCenter = null
+        lastClickedVideoSourceKey = null
     }
     
     /**

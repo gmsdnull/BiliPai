@@ -109,17 +109,16 @@ internal fun resolveBiliPaiNavEntryRouteTransitions(
         sourceMetadata.sourceKey == "${sourceMetadata.sourceRoute}:${key.bvid}"
     val sharedReadyVideoPush = recordedMatchingVideoSource &&
         sourceMetadata.sharedTransitionReady
-    val homeVideoSheetPush = recordedMatchingVideoSource &&
-        sourceMetadata.sourceRoute == "home"
-    val noOpReturn = key is BiliPaiNavKey.VideoDetail || sourceMetadata.sharedTransitionReady
+    val sharedReadyCardReturnTarget = key !is BiliPaiNavKey.VideoDetail &&
+        isCardReturnTargetNavKey(key) &&
+        sourceMetadata.sharedTransitionReady
     val forward = when {
-        homeVideoSheetPush -> BiliPaiNavRouteTransition.HOME_VIDEO_SHEET_FORWARD
         sharedReadyVideoPush -> BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT
         else -> BiliPaiNavRouteTransition.FALLBACK
     }
     val pop = when {
-        homeVideoSheetPush -> BiliPaiNavRouteTransition.HOME_VIDEO_SHEET_RETURN
-        noOpReturn -> BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT
+        sharedReadyVideoPush || sharedReadyCardReturnTarget ->
+            BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT
         else -> BiliPaiNavRouteTransition.FALLBACK
     }
     return BiliPaiNavEntryRouteTransitions(

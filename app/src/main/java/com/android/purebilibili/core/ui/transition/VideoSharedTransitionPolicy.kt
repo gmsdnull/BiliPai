@@ -45,6 +45,13 @@ internal data class VideoSharedCornerSpec(
     val endCornerDp: Int
 )
 
+internal data class VideoCardReturnReboundSpec(
+    val enabled: Boolean,
+    val durationMillis: Int,
+    val startScale: Float,
+    val startTranslationYDp: Float
+)
+
 internal fun resolveVideoSharedTransitionProfile(): VideoSharedTransitionProfile {
     return VideoSharedTransitionProfile.COVER_AND_METADATA
 }
@@ -111,7 +118,7 @@ internal fun resolveHomeVideoSharedTransitionMotionSpec(
     transitionEnabled: Boolean
 ): VideoSharedTransitionMotionSpec {
     val enabled = transitionEnabled &&
-        sourceRoute?.substringBefore("?") == HOME_SOURCE_ROUTE
+        !sourceRoute?.substringBefore("?").isNullOrBlank()
     if (!enabled) {
         return VideoSharedTransitionMotionSpec(
             enabled = false,
@@ -138,7 +145,7 @@ internal fun resolveHomeVideoSharedTransitionCornerSpec(
     transitionEnabled: Boolean
 ): VideoSharedCornerSpec {
     val enabled = transitionEnabled &&
-        sourceRoute?.substringBefore("?") == HOME_SOURCE_ROUTE
+        !sourceRoute?.substringBefore("?").isNullOrBlank()
     return if (enabled) {
         VideoSharedCornerSpec(
             enabled = true,
@@ -187,4 +194,41 @@ internal fun resolveVideoDetailContentRevealMotion(
         slideOffsetDp = revealMotion.slideOffsetDp.toInt(),
         initialScale = revealMotion.initialScale
     )
+}
+
+internal fun shouldPlayVideoCardReturnRebound(
+    cardBvid: String,
+    cardSourceRoute: String?,
+    returningSourceKey: String?,
+    returningSourceRoute: String?,
+    isReturningFromDetail: Boolean,
+    sharedTransitionReady: Boolean
+): Boolean {
+    val normalizedBvid = cardBvid.trim()
+    val normalizedCardRoute = cardSourceRoute?.substringBefore("?")?.takeIf { it.isNotBlank() }
+    val normalizedReturnRoute = returningSourceRoute?.substringBefore("?")?.takeIf { it.isNotBlank() }
+    if (!isReturningFromDetail || !sharedTransitionReady) return false
+    if (normalizedBvid.isEmpty() || normalizedCardRoute == null) return false
+    if (normalizedCardRoute != normalizedReturnRoute) return false
+    return returningSourceKey == "$normalizedCardRoute:$normalizedBvid"
+}
+
+internal fun resolveVideoCardReturnReboundSpec(
+    enabled: Boolean
+): VideoCardReturnReboundSpec {
+    return if (enabled) {
+        VideoCardReturnReboundSpec(
+            enabled = true,
+            durationMillis = 150,
+            startScale = 0.985f,
+            startTranslationYDp = 1.5f
+        )
+    } else {
+        VideoCardReturnReboundSpec(
+            enabled = false,
+            durationMillis = 0,
+            startScale = 1f,
+            startTranslationYDp = 0f
+        )
+    }
 }

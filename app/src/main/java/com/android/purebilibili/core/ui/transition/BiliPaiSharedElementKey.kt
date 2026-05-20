@@ -32,6 +32,7 @@ internal sealed interface BiliPaiSharedElementKey {
 }
 
 internal enum class VideoSharedElement {
+    CARD_SHELL,
     COVER,
     PLAYER,
     TITLE,
@@ -40,6 +41,17 @@ internal enum class VideoSharedElement {
     AVATAR,
     VIEWS,
     DANMAKU
+}
+
+internal fun videoCardShellSharedElementKey(
+    bvid: String,
+    sourceRoute: String? = null
+): BiliPaiSharedElementKey.Video {
+    return BiliPaiSharedElementKey.Video(
+        bvid = bvid,
+        element = VideoSharedElement.CARD_SHELL,
+        sourceRoute = sourceRoute
+    )
 }
 
 internal fun videoCoverSharedElementKey(

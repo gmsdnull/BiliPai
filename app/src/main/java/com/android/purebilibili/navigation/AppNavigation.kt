@@ -79,6 +79,8 @@ import com.android.purebilibili.core.ui.ProvideAnimatedVisibilityScope
 import com.android.purebilibili.core.ui.SharedTransitionProvider
 import com.android.purebilibili.core.ui.LocalAnimatedVisibilityScope
 import com.android.purebilibili.core.ui.LocalSharedTransitionScope
+import com.android.purebilibili.core.ui.transition.LocalVideoCardReturnTransitionState
+import com.android.purebilibili.core.ui.transition.VideoCardReturnTransitionState
 import com.android.purebilibili.data.model.response.BgmInfo
 
 import androidx.compose.ui.zIndex
@@ -456,7 +458,8 @@ fun AppNavigation(
         fun currentNavigation3SourceMetadata() = resolveBiliPaiNavSourceMetadata(
             sourceKey = navigation3ReturnSession.lastVideoSourceKey,
             sourceRoute = navigation3ReturnSession.lastVideoSourceRoute,
-            clickedBoundsRecorded = CardPositionManager.lastClickedCardBounds != null,
+            clickedBoundsRecorded = CardPositionManager.lastClickedCardBounds != null &&
+                CardPositionManager.lastClickedVideoSourceKey == navigation3ReturnSession.lastVideoSourceKey,
             cardFullyVisible = CardPositionManager.isCardFullyVisible
         )
         fun pushNavigation3Key(key: BiliPaiNavKey) {
@@ -480,9 +483,16 @@ fun AppNavigation(
             if (!canNavigate(false)) return
             val parsedKey = legacyRouteToBiliPaiNavKey(route)
             val videoBvid = (parsedKey as? BiliPaiNavKey.VideoDetail)?.bvid.orEmpty()
+            val normalizedCurrentVideoCardRoute = navigation3BackStack.lastOrNull()
+                ?.toLegacyRoute()
+                ?.substringBefore("?")
+            val matchedVisibleCardRoute = normalizedCurrentVideoCardRoute
+                ?.takeIf { routeKey ->
+                    CardPositionManager.lastClickedVideoSourceKey == "$routeKey:$videoBvid"
+                }
             val source = resolveBiliPaiVideoSource(
                 bvid = videoBvid,
-                explicitSourceRoute = sourceRoute,
+                explicitSourceRoute = sourceRoute ?: matchedVisibleCardRoute,
                 currentKey = navigation3BackStack.lastOrNull(),
                 previousSourceRoute = navigation3ReturnSession.lastVideoSourceRoute
             )
@@ -895,7 +905,15 @@ fun AppNavigation(
                     modifier = Modifier.fillMaxSize(),
                     sharedTransitionScope = LocalSharedTransitionScope.current
                 ) { key ->
-                    when (resolveBiliPaiNavEntryContentRole(key)) {
+                    CompositionLocalProvider(
+                        LocalVideoCardReturnTransitionState provides VideoCardReturnTransitionState(
+                            sourceKey = navigation3ReturnSession.lastVideoSourceKey,
+                            sourceRoute = navigation3ReturnSession.lastVideoSourceRoute,
+                            isReturningFromDetail = navigation3ReturnSession.isReturningFromDetail,
+                            sharedTransitionReady = navigation3SourceMetadata.sharedTransitionReady
+                        )
+                    ) {
+                        when (resolveBiliPaiNavEntryContentRole(key)) {
                         BiliPaiNavEntryContentRole.HOME -> HomeScreen(
                                 viewModel = homeViewModel,
                                 onVideoClick = { request -> navigateToHomeVideoInNavigation3(request) },
@@ -1884,6 +1902,7 @@ fun AppNavigation(
                                 )
                             }
                         }
+                    }
                     }
                 }
             } // End of Content Box

@@ -103,7 +103,9 @@ import com.android.purebilibili.core.ui.blur.BlurSurfaceType
 import com.android.purebilibili.core.ui.blur.rememberRecoverableHazeState
 import com.android.purebilibili.core.ui.blur.unifiedBlur
 import com.android.purebilibili.core.ui.components.IOSSearchBar
+import com.android.purebilibili.core.ui.transition.LocalVideoCardSharedElementSourceRoute
 import com.android.purebilibili.core.ui.transition.VIDEO_SHARED_COVER_ASPECT_RATIO
+import com.android.purebilibili.core.ui.transition.videoCardShellSharedElementKey
 import com.android.purebilibili.core.ui.components.UserLevelBadge
 import com.android.purebilibili.core.util.FormatUtils
 import com.android.purebilibili.core.util.CardPositionManager
@@ -2715,6 +2717,7 @@ private fun SpaceArchiveListItemRow(
         with(density) { configuration.screenHeightDp.dp.toPx() }
     }
     val densityValue = density.density
+    val sourceRoute = LocalVideoCardSharedElementSourceRoute.current
     var coverBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
     val coverWidth = 160.dp
     val coverHeight = coverWidth / VIDEO_SHARED_COVER_ASPECT_RATIO
@@ -2726,8 +2729,9 @@ private fun SpaceArchiveListItemRow(
         with(requireNotNull(sharedTransitionScope)) {
             Modifier.sharedBounds(
                 sharedContentState = rememberSharedContentState(
-                    key = com.android.purebilibili.core.ui.transition.videoCoverSharedElementKey(
-                        requireNotNull(sharedTransitionKey)
+                    key = videoCardShellSharedElementKey(
+                        bvid = requireNotNull(sharedTransitionKey),
+                        sourceRoute = sourceRoute
                     )
                 ),
                 animatedVisibilityScope = requireNotNull(animatedVisibilityScope),
@@ -2747,7 +2751,9 @@ private fun SpaceArchiveListItemRow(
             .padding(horizontal = 16.dp)
             .clickable {
                 coverBounds?.let { bounds ->
-                    CardPositionManager.recordCardPosition(
+                    CardPositionManager.recordVideoCardPosition(
+                        bvid = sharedTransitionKey.orEmpty(),
+                        sourceRoute = sourceRoute,
                         bounds = bounds,
                         screenWidth = screenWidthPx,
                         screenHeight = screenHeightPx,

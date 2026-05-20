@@ -51,6 +51,7 @@ import com.android.purebilibili.core.util.HapticType
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import com.android.purebilibili.core.ui.LocalSharedTransitionScope
@@ -60,14 +61,20 @@ import com.android.purebilibili.core.ui.AppSurfaceTokens
 import com.android.purebilibili.core.ui.ContainerLevel
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.graphics.graphicsLayer
 import com.android.purebilibili.core.ui.adaptive.MotionTier
 import com.android.purebilibili.core.ui.components.UpBadgeName
 import com.android.purebilibili.core.ui.components.resolveUpStatsText
+import com.android.purebilibili.core.ui.transition.LocalVideoCardReturnTransitionState
+import com.android.purebilibili.core.ui.transition.LocalVideoCardSharedElementSourceRoute
 import com.android.purebilibili.core.ui.transition.VIDEO_SHARED_COVER_ASPECT_RATIO
 import com.android.purebilibili.core.ui.transition.resolveHomeVideoSharedTransitionCornerSpec
 import com.android.purebilibili.core.ui.transition.resolveHomeVideoSharedTransitionMotionSpec
+import com.android.purebilibili.core.ui.transition.resolveVideoCardReturnReboundSpec
 import com.android.purebilibili.core.ui.transition.resolveVideoSharedTransitionOwnership
+import com.android.purebilibili.core.ui.transition.shouldPlayVideoCardReturnRebound
 import com.android.purebilibili.core.ui.transition.shouldEnableVideoCoverSharedTransition
+import com.android.purebilibili.core.ui.transition.videoCardShellSharedElementKey
 import com.android.purebilibili.feature.home.resolveHomeCardEnterAnimationEnabledAtMount
 import com.android.purebilibili.feature.home.resolveHomeCardInfoSurfaceAppearance
 import com.android.purebilibili.feature.home.rememberHomeGlassPillColors
@@ -79,6 +86,7 @@ import com.android.purebilibili.feature.video.ui.section.shouldEmphasizePreciseP
 
 // 显式导入 collectAsState 以避免 ambiguity 或 missing reference
 import androidx.compose.runtime.collectAsState
+import kotlinx.coroutines.launch
 
 internal fun shouldOpenLongPressMenu(
     hasPreviewAction: Boolean,
@@ -167,6 +175,7 @@ fun ElegantVideoCard(
     animationEnabled: Boolean = true,   //  卡片进场动画开关
     motionTier: MotionTier = MotionTier.Normal,
     transitionEnabled: Boolean = false, //  卡片过渡动画开关
+    sharedElementSourceRoute: String? = null,
     isReturningFromVideoDetail: Boolean = false,
     isQuickReturningFromVideoDetail: Boolean = false,
     scrollLiteModeEnabled: Boolean = false,
@@ -347,6 +356,10 @@ fun ElegantVideoCard(
     val coverBoundsRef = remember { object { var value: androidx.compose.ui.geometry.Rect? = null } }
     val titleBoundsRef = remember { object { var value: androidx.compose.ui.geometry.Rect? = null } }
     val menuButtonBoundsRef = remember { object { var value: androidx.compose.ui.geometry.Rect? = null } }
+    val localSharedElementSourceRoute = LocalVideoCardSharedElementSourceRoute.current
+    val effectiveSharedElementSourceRoute = remember(sharedElementSourceRoute, localSharedElementSourceRoute) {
+        sharedElementSourceRoute ?: localSharedElementSourceRoute
+    }
 
     val openDismissMenu: (androidx.compose.ui.geometry.Rect?, Offset?) -> Unit = { anchorBounds, pressOffset ->
         menuOffset = resolveVideoCardMenuOffset(
@@ -360,10 +373,12 @@ fun ElegantVideoCard(
     
     val triggerCardClick = {
         cardBoundsRef.value?.let { bounds ->
-            CardPositionManager.recordCardPosition(
-                bounds,
-                screenWidthPx,
-                screenHeightPx,
+            CardPositionManager.recordVideoCardPosition(
+                bvid = video.bvid,
+                sourceRoute = effectiveSharedElementSourceRoute,
+                bounds = bounds,
+                screenWidth = screenWidthPx,
+                screenHeight = screenHeightPx,
                 density = densityValue
             )
         }
@@ -397,29 +412,74 @@ fun ElegantVideoCard(
         //  尝试获取共享元素作用域。首页点击视频时，由卡片主容器承载整体放大/回收。
         val sharedTransitionScope = LocalSharedTransitionScope.current
         val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
+        val returnTransitionState = LocalVideoCardReturnTransitionState.current
         val coverSharedEnabled = shouldEnableVideoCoverSharedTransition(
             transitionEnabled = transitionEnabled,
             hasSharedTransitionScope = sharedTransitionScope != null,
             hasAnimatedVisibilityScope = animatedVisibilityScope != null
         )
         val isQuickReturnLimited = isReturningFromVideoDetail && isQuickReturningFromVideoDetail
-        val homeSharedElementSourceRoute = com.android.purebilibili.navigation.ScreenRoutes.Home.route
         val sharedTransitionOwnership = resolveVideoSharedTransitionOwnership(
-            sourceRoute = homeSharedElementSourceRoute,
+            sourceRoute = effectiveSharedElementSourceRoute,
             coverSharedEnabled = coverSharedEnabled,
             isQuickReturnLimited = isQuickReturnLimited
         )
-        val homeSharedTransitionMotionSpec = remember(homeSharedElementSourceRoute, transitionEnabled) {
+        val homeSharedTransitionMotionSpec = remember(effectiveSharedElementSourceRoute, transitionEnabled) {
             resolveHomeVideoSharedTransitionMotionSpec(
-                sourceRoute = homeSharedElementSourceRoute,
+                sourceRoute = effectiveSharedElementSourceRoute,
                 transitionEnabled = transitionEnabled
             )
         }
-        val homeSharedTransitionCornerSpec = remember(homeSharedElementSourceRoute, transitionEnabled) {
+        val homeSharedTransitionCornerSpec = remember(effectiveSharedElementSourceRoute, transitionEnabled) {
             resolveHomeVideoSharedTransitionCornerSpec(
-                sourceRoute = homeSharedElementSourceRoute,
+                sourceRoute = effectiveSharedElementSourceRoute,
                 transitionEnabled = transitionEnabled
             )
+        }
+        val useCardShellSharedBounds = coverSharedEnabled && !effectiveSharedElementSourceRoute.isNullOrBlank()
+        val shouldPlayReturnRebound = shouldPlayVideoCardReturnRebound(
+            cardBvid = video.bvid,
+            cardSourceRoute = effectiveSharedElementSourceRoute,
+            returningSourceKey = returnTransitionState.sourceKey,
+            returningSourceRoute = returnTransitionState.sourceRoute,
+            isReturningFromDetail = returnTransitionState.isReturningFromDetail,
+            sharedTransitionReady = returnTransitionState.sharedTransitionReady
+        )
+        val returnReboundSpec = remember(shouldPlayReturnRebound) {
+            resolveVideoCardReturnReboundSpec(shouldPlayReturnRebound)
+        }
+        val returnReboundScale = remember(video.bvid, effectiveSharedElementSourceRoute) { Animatable(1f) }
+        val returnReboundTranslationY = remember(video.bvid, effectiveSharedElementSourceRoute) { Animatable(0f) }
+        LaunchedEffect(
+            shouldPlayReturnRebound,
+            returnTransitionState.sourceKey,
+            returnReboundSpec
+        ) {
+            if (!returnReboundSpec.enabled) {
+                returnReboundScale.snapTo(1f)
+                returnReboundTranslationY.snapTo(0f)
+                return@LaunchedEffect
+            }
+            returnReboundScale.snapTo(returnReboundSpec.startScale)
+            returnReboundTranslationY.snapTo(returnReboundSpec.startTranslationYDp)
+            launch {
+                returnReboundScale.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween(
+                        durationMillis = returnReboundSpec.durationMillis,
+                        easing = FastOutSlowInEasing
+                    )
+                )
+            }
+            launch {
+                returnReboundTranslationY.animateTo(
+                    targetValue = 0f,
+                    animationSpec = tween(
+                        durationMillis = returnReboundSpec.durationMillis,
+                        easing = FastOutSlowInEasing
+                    )
+                )
+            }
         }
         val connectedCardShape = remember(cardCornerRadius) { RoundedCornerShape(cardCornerRadius) }
         val cardContainerModifier = if (infoSurfaceAppearance.useTintedSurface) {
@@ -435,8 +495,36 @@ fun ElegantVideoCard(
         } else {
             Modifier.fillMaxWidth()
         }
+        val cardShellModifier = if (useCardShellSharedBounds) {
+            with(requireNotNull(sharedTransitionScope)) {
+                Modifier.sharedBounds(
+                    sharedContentState = rememberSharedContentState(
+                        key = videoCardShellSharedElementKey(
+                            video.bvid,
+                            sourceRoute = effectiveSharedElementSourceRoute
+                        )
+                    ),
+                    animatedVisibilityScope = requireNotNull(animatedVisibilityScope),
+                    boundsTransform = { _, _ ->
+                        tween(
+                            durationMillis = homeSharedTransitionMotionSpec.durationMillis,
+                            easing = FastOutSlowInEasing
+                        )
+                    },
+                    clipInOverlayDuringTransition = OverlayClip(connectedCardShape)
+                )
+            }
+        } else {
+            Modifier
+        }
         Column(
             modifier = cardContainerModifier
+                .then(cardShellModifier)
+                .graphicsLayer {
+                    scaleX = returnReboundScale.value
+                    scaleY = returnReboundScale.value
+                    translationY = returnReboundTranslationY.value * density.density
+                }
         ) {
             val metadataSharedEnabled = sharedTransitionOwnership.useMetadataSharedBounds
         
@@ -464,13 +552,13 @@ fun ElegantVideoCard(
             }
         }
 
-        val coverModifier = if (sharedTransitionOwnership.useCoverSharedBounds) {
+        val coverModifier = if (sharedTransitionOwnership.useCoverSharedBounds && !useCardShellSharedBounds) {
             with(requireNotNull(sharedTransitionScope)) {
                 Modifier.sharedBounds(
                     sharedContentState = rememberSharedContentState(
                         key = com.android.purebilibili.core.ui.transition.videoCoverSharedElementKey(
                             video.bvid,
-                            sourceRoute = homeSharedElementSourceRoute
+                            sourceRoute = effectiveSharedElementSourceRoute
                         )
                     ),
                     animatedVisibilityScope = requireNotNull(animatedVisibilityScope),

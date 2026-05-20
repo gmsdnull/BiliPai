@@ -639,6 +639,7 @@ private fun VideoDetailRouteSheetHost(
     motion: VideoDetailRouteSheetMotion,
     isFullscreenMode: Boolean,
     backgroundColor: Color,
+    modifier: Modifier = Modifier,
     content: @Composable BoxScope.() -> Unit
 ) {
     val routeSheetTranslationYPx = with(LocalDensity.current) {
@@ -647,7 +648,7 @@ private fun VideoDetailRouteSheetHost(
     val routeSheetShape = RoundedCornerShape(frame.cornerDp.dp)
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = frame.backgroundScrimAlpha))
             .graphicsLayer {
@@ -1431,6 +1432,42 @@ fun VideoDetailScreen(
         motion = routeSheetMotion,
         isExitTransitionInProgress = isExitTransitionInProgress
     )
+    val rootSharedTransitionScope = LocalSharedTransitionScope.current
+    val detailShellSharedBoundsEnabled = shouldEnableVideoCoverSharedTransition(
+        transitionEnabled = transitionEnabled,
+        hasSharedTransitionScope = rootSharedTransitionScope != null,
+        hasAnimatedVisibilityScope = rootAnimatedVisibilityScope != null
+    ) && !sourceRouteForSharedElement.isNullOrBlank()
+    val detailShellModifier = if (detailShellSharedBoundsEnabled) {
+        with(requireNotNull(rootSharedTransitionScope)) {
+            Modifier.sharedBounds(
+                sharedContentState = rememberSharedContentState(
+                    key = com.android.purebilibili.core.ui.transition.videoCardShellSharedElementKey(
+                        bvid,
+                        sourceRoute = sourceRouteForSharedElement
+                    )
+                ),
+                animatedVisibilityScope = requireNotNull(rootAnimatedVisibilityScope),
+                boundsTransform = { _, _ ->
+                    tween(
+                        durationMillis = homeSharedTransitionMotionSpec.durationMillis,
+                        easing = FastOutSlowInEasing
+                    )
+                },
+                clipInOverlayDuringTransition = OverlayClip(
+                    RoundedCornerShape(
+                        if (homeSharedTransitionCornerSpec.enabled) {
+                            homeSharedTransitionCornerSpec.endCornerDp.dp
+                        } else {
+                            12.dp
+                        }
+                    )
+                )
+            )
+        }
+    } else {
+        Modifier
+    }
     val coverTakeoverBeforeBackDelayMillis = remember {
         resolveCoverTakeoverDelayBeforeBackNavigationMillis()
     }
@@ -2584,7 +2621,8 @@ fun VideoDetailScreen(
         frame = routeSheetFrame,
         motion = routeSheetMotion,
         isFullscreenMode = isFullscreenMode,
-        backgroundColor = MaterialTheme.colorScheme.background
+        backgroundColor = MaterialTheme.colorScheme.background,
+        modifier = detailShellModifier
     ) {
         // 📐 [平板适配] 全屏模式过渡动画（只有手机横屏才进入全屏）
         if (isFullscreenMode) {

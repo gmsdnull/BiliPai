@@ -8,7 +8,7 @@ class BiliPaiNavEntryProviderPolicyTest {
 
     @Test
     fun sharedReadyMetadataDisablesRouteLayerForReturnTarget() {
-        val metadata = biliPaiNavEntryMetadata(
+        val transitions = resolveBiliPaiNavEntryRouteTransitions(
             key = BiliPaiNavKey.Home,
             sourceMetadata = BiliPaiNavSourceMetadata(
                 sourceKey = "home:BV1",
@@ -18,12 +18,13 @@ class BiliPaiNavEntryProviderPolicyTest {
             )
         )
 
-        assertTrue(metadata.isNotEmpty())
-        assertEquals(3, metadata.size)
+        assertEquals(BiliPaiNavRouteTransition.FALLBACK, transitions.forward)
+        assertEquals(BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT, transitions.pop)
+        assertEquals(BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT, transitions.predictivePop)
     }
 
     @Test
-    fun homeVideoPushUsesSheetRouteLayerWithRecordedBounds() {
+    fun homeVideoPushUsesNoOpRouteLayerWithRecordedBounds() {
         val transitions = resolveBiliPaiNavEntryRouteTransitions(
             key = BiliPaiNavKey.VideoDetail(bvid = "BV1", sourceRoute = "home"),
             sourceMetadata = BiliPaiNavSourceMetadata(
@@ -34,13 +35,13 @@ class BiliPaiNavEntryProviderPolicyTest {
             )
         )
 
-        assertEquals(BiliPaiNavRouteTransition.HOME_VIDEO_SHEET_FORWARD, transitions.forward)
-        assertEquals(BiliPaiNavRouteTransition.HOME_VIDEO_SHEET_RETURN, transitions.pop)
-        assertEquals(BiliPaiNavRouteTransition.HOME_VIDEO_SHEET_RETURN, transitions.predictivePop)
+        assertEquals(BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT, transitions.forward)
+        assertEquals(BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT, transitions.pop)
+        assertEquals(BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT, transitions.predictivePop)
     }
 
     @Test
-    fun homeVideoPushWithTopChromeOverlapStillUsesSheetWhenBoundsAreRecorded() {
+    fun homeVideoPushWithInvisibleSourceKeepsFallbackRouteLayer() {
         val transitions = resolveBiliPaiNavEntryRouteTransitions(
             key = BiliPaiNavKey.VideoDetail(bvid = "BV1", sourceRoute = "home"),
             sourceMetadata = BiliPaiNavSourceMetadata(
@@ -51,9 +52,9 @@ class BiliPaiNavEntryProviderPolicyTest {
             )
         )
 
-        assertEquals(BiliPaiNavRouteTransition.HOME_VIDEO_SHEET_FORWARD, transitions.forward)
-        assertEquals(BiliPaiNavRouteTransition.HOME_VIDEO_SHEET_RETURN, transitions.pop)
-        assertEquals(BiliPaiNavRouteTransition.HOME_VIDEO_SHEET_RETURN, transitions.predictivePop)
+        assertEquals(BiliPaiNavRouteTransition.FALLBACK, transitions.forward)
+        assertEquals(BiliPaiNavRouteTransition.FALLBACK, transitions.pop)
+        assertEquals(BiliPaiNavRouteTransition.FALLBACK, transitions.predictivePop)
     }
 
     @Test
@@ -69,8 +70,8 @@ class BiliPaiNavEntryProviderPolicyTest {
         )
 
         assertEquals(BiliPaiNavRouteTransition.FALLBACK, transitions.forward)
-        assertEquals(BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT, transitions.pop)
-        assertEquals(BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT, transitions.predictivePop)
+        assertEquals(BiliPaiNavRouteTransition.FALLBACK, transitions.pop)
+        assertEquals(BiliPaiNavRouteTransition.FALLBACK, transitions.predictivePop)
     }
 
     @Test
@@ -86,6 +87,23 @@ class BiliPaiNavEntryProviderPolicyTest {
         )
 
         assertEquals(BiliPaiNavRouteTransition.FALLBACK, transitions.forward)
+        assertEquals(BiliPaiNavRouteTransition.FALLBACK, transitions.pop)
+        assertEquals(BiliPaiNavRouteTransition.FALLBACK, transitions.predictivePop)
+    }
+
+    @Test
+    fun nonHomeVideoPushUsesNoOpRouteLayerWithMatchingVisibleSourceCard() {
+        val transitions = resolveBiliPaiNavEntryRouteTransitions(
+            key = BiliPaiNavKey.VideoDetail(bvid = "BV1", sourceRoute = "history"),
+            sourceMetadata = BiliPaiNavSourceMetadata(
+                sourceKey = "history:BV1",
+                sourceRoute = "history",
+                clickedBoundsRecorded = true,
+                cardFullyVisible = true
+            )
+        )
+
+        assertEquals(BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT, transitions.forward)
         assertEquals(BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT, transitions.pop)
         assertEquals(BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT, transitions.predictivePop)
     }

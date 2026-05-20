@@ -33,7 +33,9 @@ import com.android.purebilibili.data.model.response.RelatedVideo
 import com.android.purebilibili.core.ui.LocalSharedTransitionScope
 import com.android.purebilibili.core.ui.LocalAnimatedVisibilityScope
 import com.android.purebilibili.core.ui.components.UpBadgeName
+import com.android.purebilibili.core.ui.transition.LocalVideoCardSharedElementSourceRoute
 import com.android.purebilibili.core.ui.transition.VIDEO_SHARED_COVER_ASPECT_RATIO
+import com.android.purebilibili.core.ui.transition.videoCardShellSharedElementKey
 import com.android.purebilibili.feature.video.ui.FollowBadgeTone
 import com.android.purebilibili.feature.video.ui.resolveVideoFollowVisualPolicy
 
@@ -138,11 +140,14 @@ fun RelatedVideoItem(
         with(density) { configuration.screenHeightDp.dp.toPx() }
     }
     val densityValue = density.density
+    val sourceRoute = LocalVideoCardSharedElementSourceRoute.current
     val coverBoundsRef = remember { object { var value: Rect? = null } }
 
     val triggerRelatedVideoClick = {
         coverBoundsRef.value?.let { bounds ->
-            CardPositionManager.recordCardPosition(
+            CardPositionManager.recordVideoCardPosition(
+                bvid = video.bvid,
+                sourceRoute = sourceRoute,
                 bounds = bounds,
                 screenWidth = screenWidthPx,
                 screenHeight = screenHeightPx,
@@ -177,7 +182,12 @@ fun RelatedVideoItem(
                 with(sharedTransitionScope) {
                     Modifier
                         .sharedBounds(
-                            sharedContentState = rememberSharedContentState(key = com.android.purebilibili.core.ui.transition.videoCoverSharedElementKey(video.bvid)),
+                            sharedContentState = rememberSharedContentState(
+                                key = videoCardShellSharedElementKey(
+                                    video.bvid,
+                                    sourceRoute = sourceRoute
+                                )
+                            ),
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ -> com.android.purebilibili.core.theme.AnimationSpecs.BiliPaiSpringSpec },
                             clipInOverlayDuringTransition = OverlayClip(

@@ -52,7 +52,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import com.android.purebilibili.core.ui.LocalSharedTransitionScope
 import com.android.purebilibili.core.ui.LocalAnimatedVisibilityScope
+import com.android.purebilibili.core.ui.transition.LocalVideoCardSharedElementSourceRoute
 import com.android.purebilibili.core.ui.transition.VIDEO_SHARED_COVER_ASPECT_RATIO
+import com.android.purebilibili.core.ui.transition.videoCardShellSharedElementKey
 import com.android.purebilibili.feature.home.resolveHomeCardEnterAnimationEnabledAtMount
 import com.android.purebilibili.feature.home.rememberHomeGlassPillColors
 import com.android.purebilibili.feature.home.resolveHomeGlassCoverPillBaseColor
@@ -75,6 +77,7 @@ fun GlassVideoCard(
     animationEnabled: Boolean = true,  //  卡片动画开关
     motionTier: MotionTier = MotionTier.Normal,
     transitionEnabled: Boolean = false, //  卡片过渡动画开关
+    sharedElementSourceRoute: String? = null,
     isReturningFromVideoDetail: Boolean = false,
     isDataSaverActive: Boolean = false,
     preferLowQualityCover: Boolean = false,
@@ -150,9 +153,19 @@ fun GlassVideoCard(
     
     //  记录卡片位置（非 Compose State，避免滚动时触发高频重组）
     val cardBoundsRef = remember { object { var value: androidx.compose.ui.geometry.Rect? = null } }
+    val localSharedElementSourceRoute = LocalVideoCardSharedElementSourceRoute.current
+    val effectiveSharedElementSourceRoute = remember(sharedElementSourceRoute, localSharedElementSourceRoute) {
+        sharedElementSourceRoute ?: localSharedElementSourceRoute
+    }
     val triggerCardClick = {
         cardBoundsRef.value?.let { bounds ->
-            CardPositionManager.recordCardPosition(bounds, screenWidthPx, screenHeightPx)
+            CardPositionManager.recordVideoCardPosition(
+                bvid = video.bvid,
+                sourceRoute = effectiveSharedElementSourceRoute,
+                bounds = bounds,
+                screenWidth = screenWidthPx,
+                screenHeight = screenHeightPx
+            )
         }
         onClick(video.bvid, 0)
     }
@@ -179,7 +192,12 @@ fun GlassVideoCard(
         with(sharedTransitionScope) {
             Modifier
                 .sharedBounds(
-                    sharedContentState = rememberSharedContentState(key = com.android.purebilibili.core.ui.transition.videoCoverSharedElementKey(video.bvid)),
+                    sharedContentState = rememberSharedContentState(
+                        key = videoCardShellSharedElementKey(
+                            video.bvid,
+                            sourceRoute = effectiveSharedElementSourceRoute
+                        )
+                    ),
                     animatedVisibilityScope = animatedVisibilityScope,
                     boundsTransform = { _, _ -> com.android.purebilibili.core.theme.AnimationSpecs.BiliPaiSpringSpec },
                     clipInOverlayDuringTransition = OverlayClip(
