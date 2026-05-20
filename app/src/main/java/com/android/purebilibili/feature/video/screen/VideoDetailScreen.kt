@@ -24,6 +24,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -164,6 +165,7 @@ import com.android.purebilibili.core.ui.LocalSharedTransitionScope
 import com.android.purebilibili.core.ui.LocalAnimatedVisibilityScope
 import com.android.purebilibili.core.ui.transition.resolveHomeVideoSharedTransitionCornerSpec
 import com.android.purebilibili.core.ui.transition.resolveHomeVideoSharedTransitionMotionSpec
+import com.android.purebilibili.core.ui.transition.resolveVideoCardSharedTransitionEasing
 import com.android.purebilibili.core.ui.transition.resolveVideoDetailContentRevealMotion
 import com.android.purebilibili.core.ui.rememberAppChevronUpIcon
 import com.android.purebilibili.core.ui.rememberAppCollectionIcon
@@ -457,7 +459,8 @@ internal data class VideoDetailRouteSheetMotion(
     val initialCornerDp: Float,
     val initialBackgroundScrimAlpha: Float,
     val settleScaleDelta: Float,
-    val settleTranslationDp: Float
+    val settleTranslationDp: Float,
+    val easing: Easing
 )
 
 internal enum class VideoDetailRouteSheetSettleDirection {
@@ -522,7 +525,8 @@ internal fun resolveVideoDetailRouteSheetMotion(
         initialCornerDp = HOME_VIDEO_ROUTE_SHEET_INITIAL_CORNER_DP,
         initialBackgroundScrimAlpha = HOME_VIDEO_ROUTE_SHEET_INITIAL_SCRIM_ALPHA,
         settleScaleDelta = HOME_VIDEO_ROUTE_SHEET_SETTLE_SCALE_DELTA,
-        settleTranslationDp = HOME_VIDEO_ROUTE_SHEET_SETTLE_TRANSLATION_DP
+        settleTranslationDp = HOME_VIDEO_ROUTE_SHEET_SETTLE_TRANSLATION_DP,
+        easing = resolveVideoCardSharedTransitionEasing()
     )
 }
 
@@ -601,7 +605,7 @@ private fun rememberVideoDetailRouteSheetFrame(
             targetValue = targetProgress,
             animationSpec = tween(
                 durationMillis = motion.mainDurationMillis,
-                easing = FastOutSlowInEasing
+                easing = motion.easing
             )
         )
         settleDirection = if (isExitTransitionInProgress) {
@@ -614,7 +618,7 @@ private fun rememberVideoDetailRouteSheetFrame(
             targetValue = 0f,
             animationSpec = tween(
                 durationMillis = motion.settleDurationMillis,
-                easing = FastOutSlowInEasing
+                easing = motion.easing
             )
         )
         settleDirection = VideoDetailRouteSheetSettleDirection.None
@@ -1453,7 +1457,7 @@ fun VideoDetailScreen(
                 boundsTransform = { _, _ ->
                     tween(
                         durationMillis = homeSharedTransitionMotionSpec.durationMillis,
-                        easing = FastOutSlowInEasing
+                        easing = homeSharedTransitionMotionSpec.easing
                     )
                 },
                 clipInOverlayDuringTransition = OverlayClip(
@@ -3018,7 +3022,7 @@ fun VideoDetailScreen(
                                         if (homeSharedTransitionMotionSpec.enabled) {
                                             tween(
                                                 durationMillis = homeSharedTransitionMotionSpec.durationMillis,
-                                                easing = FastOutSlowInEasing
+                                                easing = homeSharedTransitionMotionSpec.easing
                                             )
                                         } else {
                                             com.android.purebilibili.core.theme.AnimationSpecs.BiliPaiSpringSpec

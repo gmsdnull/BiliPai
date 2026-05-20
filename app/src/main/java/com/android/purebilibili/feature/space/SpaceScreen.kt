@@ -105,6 +105,7 @@ import com.android.purebilibili.core.ui.blur.unifiedBlur
 import com.android.purebilibili.core.ui.components.IOSSearchBar
 import com.android.purebilibili.core.ui.transition.LocalVideoCardSharedElementSourceRoute
 import com.android.purebilibili.core.ui.transition.VIDEO_SHARED_COVER_ASPECT_RATIO
+import com.android.purebilibili.core.ui.transition.resolveHomeVideoSharedTransitionMotionSpec
 import com.android.purebilibili.core.ui.transition.videoCardShellSharedElementKey
 import com.android.purebilibili.core.ui.components.UserLevelBadge
 import com.android.purebilibili.core.util.FormatUtils
@@ -2718,6 +2719,12 @@ private fun SpaceArchiveListItemRow(
     }
     val densityValue = density.density
     val sourceRoute = LocalVideoCardSharedElementSourceRoute.current
+    val cardSharedTransitionMotionSpec = remember(sourceRoute, sharedTransitionKey) {
+        resolveHomeVideoSharedTransitionMotionSpec(
+            sourceRoute = sourceRoute,
+            transitionEnabled = sharedTransitionKey != null
+        )
+    }
     var coverBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
     val coverWidth = 160.dp
     val coverHeight = coverWidth / VIDEO_SHARED_COVER_ASPECT_RATIO
@@ -2736,7 +2743,14 @@ private fun SpaceArchiveListItemRow(
                 ),
                 animatedVisibilityScope = requireNotNull(animatedVisibilityScope),
                 boundsTransform = { _, _ ->
-                    com.android.purebilibili.core.theme.AnimationSpecs.BiliPaiSpringSpec
+                    if (cardSharedTransitionMotionSpec.enabled) {
+                        tween(
+                            durationMillis = cardSharedTransitionMotionSpec.durationMillis,
+                            easing = cardSharedTransitionMotionSpec.easing
+                        )
+                    } else {
+                        com.android.purebilibili.core.theme.AnimationSpecs.BiliPaiSpringSpec
+                    }
                 },
                 clipInOverlayDuringTransition = OverlayClip(coverShape)
             )

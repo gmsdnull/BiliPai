@@ -1,5 +1,7 @@
 package com.android.purebilibili.core.ui.transition
 
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.Easing
 import com.android.purebilibili.core.ui.motion.resolveDetailVerticalContentRevealMotionSpec
 
 internal enum class VideoSharedTransitionProfile {
@@ -16,6 +18,7 @@ private const val HOME_DETAIL_REVEAL_SLIDE_OFFSET_DP = 14
 private const val HOME_DETAIL_REVEAL_INITIAL_SCALE = 0.985f
 private const val HOME_SHARED_TRANSITION_CARD_CORNER_DP = 16
 private const val HOME_SHARED_TRANSITION_PLAYER_CORNER_DP = 12
+private val VIDEO_CARD_IOS_LIKE_EASE_OUT = CubicBezierEasing(0.16f, 1f, 0.3f, 1f)
 
 internal data class VideoSharedTransitionOwnership(
     val useCoverSharedBounds: Boolean,
@@ -36,7 +39,8 @@ internal data class VideoSharedTransitionMotionSpec(
     val contentDelayMillis: Int,
     val contentDurationMillis: Int,
     val contentSlideOffsetDp: Int,
-    val contentInitialScale: Float
+    val contentInitialScale: Float,
+    val easing: Easing
 )
 
 internal data class VideoSharedCornerSpec(
@@ -49,11 +53,16 @@ internal data class VideoCardReturnReboundSpec(
     val enabled: Boolean,
     val durationMillis: Int,
     val startScale: Float,
-    val startTranslationYDp: Float
+    val startTranslationYDp: Float,
+    val easing: Easing
 )
 
 internal fun resolveVideoSharedTransitionProfile(): VideoSharedTransitionProfile {
     return VideoSharedTransitionProfile.COVER_AND_METADATA
+}
+
+internal fun resolveVideoCardSharedTransitionEasing(): Easing {
+    return VIDEO_CARD_IOS_LIKE_EASE_OUT
 }
 
 private fun resolveVideoSharedTransitionProfile(sourceRoute: String?): VideoSharedTransitionProfile {
@@ -126,7 +135,8 @@ internal fun resolveHomeVideoSharedTransitionMotionSpec(
             contentDelayMillis = 0,
             contentDurationMillis = 0,
             contentSlideOffsetDp = 0,
-            contentInitialScale = 1f
+            contentInitialScale = 1f,
+            easing = VIDEO_CARD_IOS_LIKE_EASE_OUT
         )
     }
 
@@ -136,7 +146,8 @@ internal fun resolveHomeVideoSharedTransitionMotionSpec(
         contentDelayMillis = HOME_DETAIL_REVEAL_DELAY_MILLIS,
         contentDurationMillis = HOME_DETAIL_REVEAL_DURATION_MILLIS,
         contentSlideOffsetDp = HOME_DETAIL_REVEAL_SLIDE_OFFSET_DP,
-        contentInitialScale = HOME_DETAIL_REVEAL_INITIAL_SCALE
+        contentInitialScale = HOME_DETAIL_REVEAL_INITIAL_SCALE,
+        easing = VIDEO_CARD_IOS_LIKE_EASE_OUT
     )
 }
 
@@ -221,14 +232,16 @@ internal fun resolveVideoCardReturnReboundSpec(
             enabled = true,
             durationMillis = 150,
             startScale = 0.985f,
-            startTranslationYDp = 1.5f
+            startTranslationYDp = 1.5f,
+            easing = VIDEO_CARD_IOS_LIKE_EASE_OUT
         )
     } else {
         VideoCardReturnReboundSpec(
             enabled = false,
             durationMillis = 0,
             startScale = 1f,
-            startTranslationYDp = 0f
+            startTranslationYDp = 0f,
+            easing = VIDEO_CARD_IOS_LIKE_EASE_OUT
         )
     }
 }

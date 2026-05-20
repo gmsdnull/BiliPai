@@ -52,7 +52,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import com.android.purebilibili.core.ui.LocalSharedTransitionScope
 import com.android.purebilibili.core.ui.LocalAnimatedVisibilityScope
@@ -467,7 +466,7 @@ fun ElegantVideoCard(
                     targetValue = 1f,
                     animationSpec = tween(
                         durationMillis = returnReboundSpec.durationMillis,
-                        easing = FastOutSlowInEasing
+                        easing = returnReboundSpec.easing
                     )
                 )
             }
@@ -476,7 +475,7 @@ fun ElegantVideoCard(
                     targetValue = 0f,
                     animationSpec = tween(
                         durationMillis = returnReboundSpec.durationMillis,
-                        easing = FastOutSlowInEasing
+                        easing = returnReboundSpec.easing
                     )
                 )
             }
@@ -508,7 +507,7 @@ fun ElegantVideoCard(
                     boundsTransform = { _, _ ->
                         tween(
                             durationMillis = homeSharedTransitionMotionSpec.durationMillis,
-                            easing = FastOutSlowInEasing
+                            easing = homeSharedTransitionMotionSpec.easing
                         )
                     },
                     clipInOverlayDuringTransition = OverlayClip(connectedCardShape)
@@ -565,7 +564,7 @@ fun ElegantVideoCard(
                     boundsTransform = { _, _ ->
                         tween(
                             durationMillis = homeSharedTransitionMotionSpec.durationMillis,
-                            easing = FastOutSlowInEasing
+                            easing = homeSharedTransitionMotionSpec.easing
                         )
                     },
                     clipInOverlayDuringTransition = OverlayClip(coverShape)

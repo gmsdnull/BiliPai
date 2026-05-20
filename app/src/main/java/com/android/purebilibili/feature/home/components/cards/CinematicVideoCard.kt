@@ -62,6 +62,7 @@ import com.android.purebilibili.core.ui.adaptive.MotionTier
 import com.android.purebilibili.core.ui.components.UpBadgeName
 import com.android.purebilibili.core.ui.transition.LocalVideoCardSharedElementSourceRoute
 import com.android.purebilibili.core.ui.transition.VIDEO_SHARED_COVER_ASPECT_RATIO
+import com.android.purebilibili.core.ui.transition.resolveHomeVideoSharedTransitionMotionSpec
 import com.android.purebilibili.core.ui.transition.shouldEnableVideoCoverSharedTransition
 import com.android.purebilibili.core.ui.transition.shouldEnableVideoMetadataSharedTransition
 import com.android.purebilibili.core.ui.transition.videoCardShellSharedElementKey
@@ -139,6 +140,12 @@ fun CinematicVideoCard(
     val localSharedElementSourceRoute = LocalVideoCardSharedElementSourceRoute.current
     val effectiveSharedElementSourceRoute = remember(sharedElementSourceRoute, localSharedElementSourceRoute) {
         sharedElementSourceRoute ?: localSharedElementSourceRoute
+    }
+    val cardSharedTransitionMotionSpec = remember(effectiveSharedElementSourceRoute, transitionEnabled) {
+        resolveHomeVideoSharedTransitionMotionSpec(
+            sourceRoute = effectiveSharedElementSourceRoute,
+            transitionEnabled = transitionEnabled
+        )
     }
     val triggerCardClick = {
         cardBoundsRef.value?.let { bounds ->
@@ -230,7 +237,16 @@ fun CinematicVideoCard(
                             )
                         ),
                         animatedVisibilityScope = requireNotNull(animatedVisibilityScope),
-                        boundsTransform = { _, _ -> com.android.purebilibili.core.theme.AnimationSpecs.BiliPaiSpringSpec },
+                        boundsTransform = { _, _ ->
+                            if (cardSharedTransitionMotionSpec.enabled) {
+                                tween(
+                                    durationMillis = cardSharedTransitionMotionSpec.durationMillis,
+                                    easing = cardSharedTransitionMotionSpec.easing
+                                )
+                            } else {
+                                com.android.purebilibili.core.theme.AnimationSpecs.BiliPaiSpringSpec
+                            }
+                        },
                         clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(cardCornerRadius))
                     )
                 }

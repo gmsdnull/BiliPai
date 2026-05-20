@@ -38,6 +38,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 //  共享元素过渡
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 
 import com.android.purebilibili.core.ui.LocalSharedTransitionScope
 import com.android.purebilibili.core.ui.LocalAnimatedVisibilityScope
@@ -51,6 +52,7 @@ import com.android.purebilibili.core.ui.components.UpBadgeName
 import com.android.purebilibili.core.ui.components.resolveUpStatsText
 import com.android.purebilibili.core.ui.transition.LocalVideoCardSharedElementSourceRoute
 import com.android.purebilibili.core.ui.transition.VIDEO_SHARED_COVER_ASPECT_RATIO
+import com.android.purebilibili.core.ui.transition.resolveHomeVideoSharedTransitionMotionSpec
 import com.android.purebilibili.core.ui.transition.shouldEnableVideoCoverSharedTransition
 import com.android.purebilibili.core.ui.transition.shouldEnableVideoMetadataSharedTransition
 import com.android.purebilibili.core.ui.transition.videoCardShellSharedElementKey
@@ -194,6 +196,12 @@ fun StoryVideoCard(
         coverSharedEnabled = coverSharedEnabled,
         isQuickReturnLimited = isQuickReturnLimited
     )
+    val cardSharedTransitionMotionSpec = remember(effectiveSharedElementSourceRoute, transitionEnabled) {
+        resolveHomeVideoSharedTransitionMotionSpec(
+            sourceRoute = effectiveSharedElementSourceRoute,
+            transitionEnabled = transitionEnabled
+        )
+    }
     
     val cardModifier = if (coverSharedEnabled) {
         with(requireNotNull(sharedTransitionScope)) {
@@ -206,7 +214,16 @@ fun StoryVideoCard(
                         )
                     ),
                     animatedVisibilityScope = requireNotNull(animatedVisibilityScope),
-                    boundsTransform = { _, _ -> com.android.purebilibili.core.theme.AnimationSpecs.BiliPaiSpringSpec },
+                    boundsTransform = { _, _ ->
+                        if (cardSharedTransitionMotionSpec.enabled) {
+                            tween(
+                                durationMillis = cardSharedTransitionMotionSpec.durationMillis,
+                                easing = cardSharedTransitionMotionSpec.easing
+                            )
+                        } else {
+                            com.android.purebilibili.core.theme.AnimationSpecs.BiliPaiSpringSpec
+                        }
+                    },
                     clipInOverlayDuringTransition = OverlayClip(
                         RoundedCornerShape(cardCornerRadius)
                     )

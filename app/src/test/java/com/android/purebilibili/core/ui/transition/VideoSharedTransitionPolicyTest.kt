@@ -158,6 +158,8 @@ class VideoSharedTransitionPolicyTest {
         assertEquals(220, motion.contentDurationMillis)
         assertEquals(14, motion.contentSlideOffsetDp)
         assertEquals(0.985f, motion.contentInitialScale, 0.0001f)
+        assertTrue(motion.easing.transform(0.35f) > 0.7f)
+        assertTrue(motion.easing.transform(0.75f) > 0.96f)
     }
 
     @Test
@@ -169,6 +171,14 @@ class VideoSharedTransitionPolicyTest {
 
         assertTrue(motion.enabled)
         assertEquals(360, motion.durationMillis)
+    }
+
+    @Test
+    fun returnRebound_usesFastOutSlowFinishCurve() {
+        val rebound = resolveVideoCardReturnReboundSpec(enabled = true)
+
+        assertTrue(rebound.easing.transform(0.35f) > 0.7f)
+        assertTrue(rebound.easing.transform(0.75f) > 0.96f)
     }
 
     @Test
