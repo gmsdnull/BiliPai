@@ -1358,6 +1358,112 @@ fun AppNavigation(
                                     }
                                 )
                             }
+                        BiliPaiNavEntryContentRole.DYNAMIC -> DynamicScreen(
+                            onVideoClick = { bvid -> navigateToVideoInNavigation3(bvid, 0L, "") },
+                            onBangumiClick = { seasonId, epId ->
+                                if (seasonId > 0L || epId > 0L) {
+                                    pushNavigation3Route(ScreenRoutes.BangumiDetail.createRoute(seasonId, epId))
+                                }
+                            },
+                            onDynamicDetailClick = { dynamicId ->
+                                pushNavigation3Route(ScreenRoutes.DynamicDetail.createRoute(dynamicId))
+                            },
+                            onUserClick = { mid -> pushNavigation3Route(ScreenRoutes.Space.createRoute(mid)) },
+                            onLiveClick = { roomId, title, uname ->
+                                pushNavigation3Route(ScreenRoutes.Live.createRoute(roomId, title, uname))
+                            },
+                            onBack = { pushNavigation3Key(BiliPaiNavKey.Home) },
+                            onLoginClick = { pushNavigation3Key(BiliPaiNavKey.Login) },
+                            onHomeClick = { pushNavigation3Key(BiliPaiNavKey.Home) },
+                            globalHazeState = mainHazeState
+                        )
+                        BiliPaiNavEntryContentRole.SEARCH -> {
+                            val homeState by homeViewModel.uiState.collectAsState()
+                            SearchScreen(
+                                userFace = homeState.user.face,
+                                initialKeyword = effectiveInitialSearchKeyword.orEmpty(),
+                                onInitialKeywordConsumed = consumeInitialSearchKeyword,
+                                entryMotionSource = searchEntryMotionSource,
+                                entryMotionKey = searchEntryMotionKey,
+                                onEntryMotionConsumed = { consumedKey ->
+                                    if (consumedKey == searchEntryMotionKey) {
+                                        searchEntryMotionSource = SearchEntryMotionSource.NONE
+                                    }
+                                },
+                                onBack = { performSystemBackAction() },
+                                onOpenTrending = { pushNavigation3Route(ScreenRoutes.SearchTrending.route) },
+                                onVideoClick = { bvid, cid -> navigateToVideoInNavigation3(bvid, cid, "") },
+                                onUpClick = { mid -> pushNavigation3Route(ScreenRoutes.Space.createRoute(mid)) },
+                                onBangumiClick = { seasonId ->
+                                    if (seasonId > 0L) {
+                                        pushNavigation3Route(ScreenRoutes.BangumiDetail.createRoute(seasonId))
+                                    }
+                                },
+                                onLiveClick = { roomId, title, uname ->
+                                    pushNavigation3Route(ScreenRoutes.Live.createRoute(roomId, title, uname))
+                                },
+                                onTopicClick = { topicId ->
+                                    if (topicId > 0L) {
+                                        pushNavigation3Route(ScreenRoutes.TopicDetail.createRoute(topicId))
+                                    }
+                                },
+                                onArticleClick = { articleId, title ->
+                                    coroutineScope.launch {
+                                        when (val target = resolveArticleNavigationTarget(articleId)) {
+                                            is ArticleNavigationTarget.NativeDynamic -> {
+                                                pushNavigation3Route(ScreenRoutes.DynamicDetail.createRoute(target.dynamicId))
+                                            }
+                                            is ArticleNavigationTarget.NativeArticle -> {
+                                                pushNavigation3Route(
+                                                    ScreenRoutes.ArticleDetail.createRoute(target.articleId, title)
+                                                )
+                                            }
+                                            null -> Unit
+                                        }
+                                    }
+                                },
+                                onAvatarClick = {
+                                    if (homeState.user.isLogin) {
+                                        pushNavigation3Key(BiliPaiNavKey.Profile)
+                                    } else {
+                                        pushNavigation3Key(BiliPaiNavKey.Login)
+                                    }
+                                }
+                            )
+                        }
+                        BiliPaiNavEntryContentRole.PROFILE -> {
+                            val navigateFromProfile: (String) -> Unit = { route ->
+                                pushNavigation3Route(route)
+                            }
+                            ProfileScreen(
+                                onBack = { pushNavigation3Key(BiliPaiNavKey.Home) },
+                                onGoToLogin = { pushNavigation3Key(BiliPaiNavKey.Login) },
+                                onLogoutSuccess = { homeViewModel.refresh() },
+                                onAccountSwitchSuccess = { homeViewModel.refresh() },
+                                onSettingsClick = { navigateFromProfile(ScreenRoutes.Settings.route) },
+                                onHistoryClick = { navigateFromProfile(ScreenRoutes.History.route) },
+                                showHistoryService = shouldShowProfileHistoryService(
+                                    visibleBottomBarItems.map { it.name }
+                                ),
+                                onFavoriteClick = { navigateFromProfile(ScreenRoutes.Favorite.route) },
+                                onFavoriteFolderClick = { mediaId, ownerMid, title ->
+                                    pushNavigation3Route(
+                                        ScreenRoutes.SeasonSeriesDetail.createRoute(
+                                            type = "favorite",
+                                            id = mediaId,
+                                            mid = ownerMid,
+                                            title = title
+                                        )
+                                    )
+                                },
+                                onFollowingClick = { mid -> navigateFromProfile(ScreenRoutes.Following.createRoute(mid)) },
+                                onDownloadClick = { navigateFromProfile(ScreenRoutes.DownloadList.route) },
+                                onWatchLaterClick = { navigateFromProfile(ScreenRoutes.WatchLater.route) },
+                                onInboxClick = { navigateFromProfile(ScreenRoutes.Inbox.route) },
+                                onVideoClick = { bvid -> navigateToVideoInNavigation3(bvid, 0L, "") },
+                                deferImmersiveRenderBudget = bottomPagerRenderBudget.deferProfileImmersiveBackground
+                            )
+                        }
                         BiliPaiNavEntryContentRole.SETTINGS -> SettingsScreen(
                                 onBack = { performSystemBackAction() },
                                 onOpenSourceLicensesClick = { pushNavigation3Route(ScreenRoutes.OpenSourceLicenses.route) },
@@ -1424,8 +1530,6 @@ fun AppNavigation(
                                     }
                                 )
                             }
-                        BiliPaiNavEntryContentRole.DYNAMIC,
-                        BiliPaiNavEntryContentRole.SEARCH,
                         BiliPaiNavEntryContentRole.DEFERRED_LEGACY_ROUTE -> {
                             LaunchedEffect(key) {
                                 val targetRoute = key.toLegacyRoute()
