@@ -78,7 +78,7 @@ private fun disabledVideoDirectionForwardTransform(directionSign: Int): ContentT
 }
 
 private fun disabledVideoDirectionReturnTransform(directionSign: Int): ContentTransform {
-    return fadeIn(animationSpec = tween(NAV3_DISABLED_VIDEO_DIRECTION_MILLIS)) togetherWith
+    return EnterTransition.None togetherWith
         (
             slideOutHorizontally(
                 animationSpec = tween(NAV3_DISABLED_VIDEO_DIRECTION_MILLIS),
