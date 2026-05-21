@@ -3,6 +3,9 @@
 // Adapted for BiliPai Navigation3 predictive back animation styles.
 package com.android.purebilibili.navigation3
 
+import android.os.Build
+import android.view.RoundedCorner
+import android.view.View
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterExitState
@@ -30,7 +33,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.scene.Scene
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
@@ -199,6 +205,7 @@ internal class BiliPaiAospPredictiveBackMotion : BiliPaiPredictiveBackMotionHand
         val navContent = LocalNavAnimatedContentScope.current
         val transition = navContent.transition
         val containerHeightPx = windowInfo.containerSize.height
+        val predictiveCornerRadius = currentBiliPaiPredictiveBackCornerRadius()
         val pageKey = contentPageKey.toString()
         val enteringStartOffsetPx = with(LocalDensity.current) { 96.dp.toPx() }
         val linearProgress = exitAnimatable.value
@@ -221,17 +228,18 @@ internal class BiliPaiAospPredictiveBackMotion : BiliPaiPredictiveBackMotionHand
             inPredictiveBackAnimation = animatedScale != 1f
         }
 
-        val directionMultiplier = if (edge == EDGE_LEFT) 1f else -1f
+        val directionMultiplier = resolveBiliPaiPredictiveBackExitDirectionMultiplier(
+            PredictiveBackAnimationStyle.AOSP
+        )
         val isExitingPage = exitingPageKey != null && exitingPageKey == pageKey
         val isCurrentNavTarget = exitingPageKey == null && pageKey == currentPageKey.toString()
         val maxScale = 0.85f
         val dragScale = 1f - (1f - maxScale) * gestureProgress
-        val currentPivotY = if (touchY != null && containerHeightPx > 0) {
-            (touchY / containerHeightPx).coerceIn(0.1f, 0.9f)
-        } else {
-            0.5f
-        }
-        val currentPivotX = if (edge == EDGE_LEFT) 0.8f else 0.2f
+        val pivot = resolveBiliPaiPredictiveBackPivot(
+            swipeEdge = edge,
+            touchY = touchY,
+            containerHeightPx = containerHeightPx
+        )
         val needsClip = (transitionState is InProgress && inPredictiveBackAnimation) ||
             exitingPageKey != null
 
@@ -241,7 +249,7 @@ internal class BiliPaiAospPredictiveBackMotion : BiliPaiPredictiveBackMotionHand
                     return@graphicsLayer
                 }
                 if (transitionState is InProgress) {
-                    transformOrigin = TransformOrigin(currentPivotX, currentPivotY)
+                    transformOrigin = TransformOrigin(pivot.x, pivot.y)
                 }
                 when {
                     isExitingPage -> {
@@ -273,7 +281,7 @@ internal class BiliPaiAospPredictiveBackMotion : BiliPaiPredictiveBackMotionHand
                     }
                 }
             }
-            .clip(if (needsClip) RoundedCornerShape(28.dp) else RoundedCornerShape(0.dp))
+            .clip(if (needsClip) RoundedCornerShape(predictiveCornerRadius) else RoundedCornerShape(0.dp))
     }
 
     override fun AnimatedContentTransitionScope<Scene<BiliPaiNavKey>>.onPredictivePopTransitionSpec(
@@ -326,6 +334,7 @@ internal class BiliPaiScalePredictiveBackMotion : BiliPaiPredictiveBackMotionHan
         val navContent = LocalNavAnimatedContentScope.current
         val containerHeightPx = windowInfo.containerSize.height
         val containerWidthPx = windowInfo.containerSize.width.toFloat()
+        val predictiveCornerRadius = currentBiliPaiPredictiveBackCornerRadius()
         val pageKey = contentPageKey.toString()
         val transition = navContent.transition
 
@@ -344,13 +353,14 @@ internal class BiliPaiScalePredictiveBackMotion : BiliPaiPredictiveBackMotionHan
             val progressInProgress = transitionState as? InProgress
             val edge = progressInProgress?.latestEvent?.swipeEdge ?: 0
             val touchY = progressInProgress?.latestEvent?.touchY
-            val currentPivotY = if (touchY != null && containerHeightPx > 0) {
-                (touchY / containerHeightPx).coerceIn(0.1f, 0.9f)
-            } else {
-                0.5f
-            }
-            val currentPivotX = if (edge == EDGE_LEFT) 0.8f else 0.2f
-            val directionMultiplier = if (edge == EDGE_LEFT) 1f else -1f
+            val pivot = resolveBiliPaiPredictiveBackPivot(
+                swipeEdge = edge,
+                touchY = touchY,
+                containerHeightPx = containerHeightPx
+            )
+            val directionMultiplier = resolveBiliPaiPredictiveBackExitDirectionMultiplier(
+                PredictiveBackAnimationStyle.SCALE
+            )
             val exitProgress = if (pageKey != currentPageKey.toString()) 1f else exitAnimatable.value
             val needsClip = inPredictiveBackAnimation || exitingPageKey != null
 
@@ -358,8 +368,8 @@ internal class BiliPaiScalePredictiveBackMotion : BiliPaiPredictiveBackMotionHan
                 scaleX = animatedScale
                 scaleY = animatedScale
                 translationX = containerWidthPx * exitProgress * directionMultiplier
-                transformOrigin = TransformOrigin(currentPivotX, currentPivotY)
-            }.clip(if (needsClip) RoundedCornerShape(28.dp) else RoundedCornerShape(0.dp))
+                transformOrigin = TransformOrigin(pivot.x, pivot.y)
+            }.clip(if (needsClip) RoundedCornerShape(predictiveCornerRadius) else RoundedCornerShape(0.dp))
         } else {
             if (transitionState is InProgress) {
                 val progress = if (!inPredictiveBackAnimation) 1f else exitAnimatable.value
@@ -387,6 +397,69 @@ internal class BiliPaiScalePredictiveBackMotion : BiliPaiPredictiveBackMotionHan
 
     override fun AnimatedContentTransitionScope<Scene<BiliPaiNavKey>>.onTransitionSpec(): ContentTransform =
         defaultTransitionSpec<BiliPaiNavKey>().invoke(this)
+}
+
+internal data class BiliPaiPredictiveBackPivot(
+    val x: Float,
+    val y: Float
+)
+
+internal fun resolveBiliPaiPredictiveBackExitDirectionMultiplier(
+    style: PredictiveBackAnimationStyle
+): Float {
+    return when (style) {
+        PredictiveBackAnimationStyle.AOSP,
+        PredictiveBackAnimationStyle.SCALE -> 1f
+        PredictiveBackAnimationStyle.NONE,
+        PredictiveBackAnimationStyle.MIUIX,
+        PredictiveBackAnimationStyle.CLASSIC -> 1f
+    }
+}
+
+internal fun resolveBiliPaiPredictiveBackPivot(
+    swipeEdge: Int,
+    touchY: Float?,
+    containerHeightPx: Int
+): BiliPaiPredictiveBackPivot {
+    val pivotY = if (touchY != null && containerHeightPx > 0) {
+        (touchY / containerHeightPx).coerceIn(0.1f, 0.9f)
+    } else {
+        0.5f
+    }
+    val pivotX = if (swipeEdge == EDGE_LEFT) 0.8f else 0.2f
+    return BiliPaiPredictiveBackPivot(x = pivotX, y = pivotY)
+}
+
+internal fun resolveBiliPaiPredictiveBackCornerRadius(
+    deviceCornerRadius: Dp?
+): Dp = deviceCornerRadius ?: 28.dp
+
+@Composable
+private fun currentBiliPaiPredictiveBackCornerRadius(): Dp {
+    val view = LocalView.current
+    val density = LocalDensity.current
+    return resolveBiliPaiPredictiveBackCornerRadius(
+        deviceCornerRadius = readDeviceRoundedCornerRadiusDp(view = view, density = density)
+    )
+}
+
+@Suppress("NewApi")
+private fun readDeviceRoundedCornerRadiusDp(
+    view: View,
+    density: Density
+): Dp? {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return null
+    val windowInsets = view.rootWindowInsets ?: return null
+    val maxRadiusPx = listOf(
+        RoundedCorner.POSITION_TOP_LEFT,
+        RoundedCorner.POSITION_TOP_RIGHT,
+        RoundedCorner.POSITION_BOTTOM_RIGHT,
+        RoundedCorner.POSITION_BOTTOM_LEFT
+    ).maxOfOrNull { position ->
+        windowInsets.getRoundedCorner(position)?.radius ?: 0
+    } ?: 0
+    if (maxRadiusPx <= 0) return null
+    return with(density) { maxRadiusPx.toDp() }
 }
 
 internal object BiliPaiPredictiveBackMotion {
