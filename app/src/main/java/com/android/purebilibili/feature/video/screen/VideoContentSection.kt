@@ -220,6 +220,21 @@ internal fun resolveVideoContentTabSwitchAnimationSpec(
     }
 }
 
+internal fun resolveVideoContentEffectiveSelectedTabIndex(
+    currentPage: Int,
+    targetPage: Int,
+    isScrollInProgress: Boolean,
+    pageCount: Int
+): Int {
+    if (pageCount <= 0) return 0
+    val current = currentPage.takeIf { it in 0 until pageCount } ?: 0
+    return if (isScrollInProgress && targetPage in 0 until pageCount) {
+        targetPage
+    } else {
+        current
+    }
+}
+
 /**
  * 视频详情内容区域
  * 从 VideoDetailScreen.kt 提取出来，提高代码可维护性
@@ -313,8 +328,7 @@ fun VideoContentSection(
     showInteractionActions: Boolean = true,
     isVideoPlaying: Boolean = false,
     onSelectedTabChange: (Int) -> Unit = {},
-    onIntroScrollStateChange: (Int, Int) -> Unit = { _, _ -> },
-    onCommentScrollStateChange: (Int, Int) -> Unit = { _, _ -> }
+    onIntroScrollStateChange: (Int, Int) -> Unit = { _, _ -> }
 ) {
     val tabs = listOf("简介", "评论 $replyCount")
     val pagerState = rememberPagerState(pageCount = { tabs.size })
@@ -359,6 +373,7 @@ fun VideoContentSection(
     val tabSwitchAnimationSpec = remember(uiPreset) {
         resolveVideoContentTabSwitchAnimationSpec(uiPreset)
     }
+    val latestOnSelectedTabChange by rememberUpdatedState(onSelectedTabChange)
 
     val onTabSelected: (Int) -> Unit = { index ->
         scope.launch {
@@ -371,21 +386,25 @@ fun VideoContentSection(
             )
         }
     }
-    LaunchedEffect(pagerState.currentPage) {
-        onSelectedTabChange(pagerState.currentPage)
+    LaunchedEffect(pagerState, tabs.size) {
+        snapshotFlow {
+            resolveVideoContentEffectiveSelectedTabIndex(
+                currentPage = pagerState.currentPage,
+                targetPage = pagerState.targetPage,
+                isScrollInProgress = pagerState.isScrollInProgress,
+                pageCount = tabs.size
+            )
+        }
+            .distinctUntilChanged()
+            .collect { effectiveTabIndex ->
+                latestOnSelectedTabChange(effectiveTabIndex)
+            }
     }
     LaunchedEffect(introListState) {
         snapshotFlow { introListState.firstVisibleItemIndex to introListState.firstVisibleItemScrollOffset }
             .distinctUntilChanged()
             .collect { state: Pair<Int, Int> ->
                 onIntroScrollStateChange(state.first, state.second)
-            }
-    }
-    LaunchedEffect(commentListState) {
-        snapshotFlow { commentListState.firstVisibleItemIndex to commentListState.firstVisibleItemScrollOffset }
-            .distinctUntilChanged()
-            .collect { state: Pair<Int, Int> ->
-                onCommentScrollStateChange(state.first, state.second)
             }
     }
     val bottomContentPadding = if (showInteractionActions) 84.dp else 12.dp

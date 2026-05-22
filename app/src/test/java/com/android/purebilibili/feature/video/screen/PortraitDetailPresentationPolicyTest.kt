@@ -123,14 +123,12 @@ class PortraitDetailPresentationPolicyTest {
     }
 
     @Test
-    fun inlinePortraitPlayer_keepsExpandedAtCommentTopThenCompactsWhenCommentScrollsDown() {
-        assertFalse(
+    fun inlinePortraitPlayer_compactsImmediatelyWhenCommentTabIsSelected() {
+        assertTrue(
             shouldUseCompactInlinePortraitPlayerForCommentTab(
                 useOfficialInlinePortraitDetailExperience = true,
                 selectedTabIndex = 1,
                 isPortraitFullscreen = false,
-                firstVisibleItemIndex = 0,
-                firstVisibleItemScrollOffset = 0,
                 collapseMode = PortraitPlayerCollapseMode.BOTH
             )
         )
@@ -139,8 +137,6 @@ class PortraitDetailPresentationPolicyTest {
                 useOfficialInlinePortraitDetailExperience = true,
                 selectedTabIndex = 1,
                 isPortraitFullscreen = false,
-                firstVisibleItemIndex = 0,
-                firstVisibleItemScrollOffset = 80,
                 collapseMode = PortraitPlayerCollapseMode.BOTH
             )
         )
@@ -149,8 +145,6 @@ class PortraitDetailPresentationPolicyTest {
                 useOfficialInlinePortraitDetailExperience = true,
                 selectedTabIndex = 0,
                 isPortraitFullscreen = false,
-                firstVisibleItemIndex = 1,
-                firstVisibleItemScrollOffset = 0,
                 collapseMode = PortraitPlayerCollapseMode.BOTH
             )
         )
@@ -159,8 +153,18 @@ class PortraitDetailPresentationPolicyTest {
                 useOfficialInlinePortraitDetailExperience = true,
                 selectedTabIndex = 1,
                 isPortraitFullscreen = true,
-                firstVisibleItemIndex = 1,
-                firstVisibleItemScrollOffset = 0,
+                collapseMode = PortraitPlayerCollapseMode.BOTH
+            )
+        )
+    }
+
+    @Test
+    fun inlinePortraitPlayer_commentHistoryDoesNotCollapseIntroTab() {
+        assertFalse(
+            shouldUseCompactInlinePortraitPlayerForCommentTab(
+                useOfficialInlinePortraitDetailExperience = true,
+                selectedTabIndex = 0,
+                isPortraitFullscreen = false,
                 collapseMode = PortraitPlayerCollapseMode.BOTH
             )
         )
@@ -230,8 +234,6 @@ class PortraitDetailPresentationPolicyTest {
                 useOfficialInlinePortraitDetailExperience = true,
                 selectedTabIndex = 1,
                 isPortraitFullscreen = false,
-                firstVisibleItemIndex = 1,
-                firstVisibleItemScrollOffset = 0,
                 collapseMode = PortraitPlayerCollapseMode.INTRO_ONLY,
                 isVerticalVideo = true
             )
@@ -252,8 +254,6 @@ class PortraitDetailPresentationPolicyTest {
                 useOfficialInlinePortraitDetailExperience = true,
                 selectedTabIndex = 1,
                 isPortraitFullscreen = false,
-                firstVisibleItemIndex = 1,
-                firstVisibleItemScrollOffset = 0,
                 collapseMode = PortraitPlayerCollapseMode.INTRO_ONLY,
                 isVerticalVideo = false
             )
@@ -274,8 +274,6 @@ class PortraitDetailPresentationPolicyTest {
                 useOfficialInlinePortraitDetailExperience = true,
                 selectedTabIndex = 1,
                 isPortraitFullscreen = false,
-                firstVisibleItemIndex = 1,
-                firstVisibleItemScrollOffset = 0,
                 collapseMode = PortraitPlayerCollapseMode.COMMENT_ONLY,
                 isVerticalVideo = false
             )
@@ -304,6 +302,16 @@ class PortraitDetailPresentationPolicyTest {
                 manualCollapseProgress = 0.2f,
                 compactForCommentTabProgress = 0.6f
             )
+        )
+    }
+
+    @Test
+    fun inlinePortraitPlayer_commentCollapseMotionUsesTabSwitchDuration() {
+        val spec = VideoContentTabSwitchAnimationSpec(durationMs = 360)
+
+        assertEquals(
+            spec.durationMs,
+            resolveInlinePortraitPlayerCommentCollapseDurationMillis(spec)
         )
     }
 

@@ -89,19 +89,14 @@ internal fun shouldUseCompactInlinePortraitPlayerForCommentTab(
     selectedTabIndex: Int,
     isPortraitFullscreen: Boolean,
     isCommentThreadVisible: Boolean = false,
-    firstVisibleItemIndex: Int = 0,
-    firstVisibleItemScrollOffset: Int = 0,
     collapseMode: PortraitPlayerCollapseMode = PortraitPlayerCollapseMode.BOTH,
-    isVerticalVideo: Boolean = true,
-    commentScrollThresholdPx: Int = 56
+    isVerticalVideo: Boolean = true
 ): Boolean {
     if (!useOfficialInlinePortraitDetailExperience || isPortraitFullscreen) return false
     if (!collapseMode.enablesVideoOrientation(isVerticalVideo)) return false
     if (!collapseMode.enablesComment) return false
     if (isCommentThreadVisible) return true
-    if (selectedTabIndex != 1) return false
-    if (firstVisibleItemIndex > 0) return true
-    return firstVisibleItemScrollOffset >= commentScrollThresholdPx
+    return selectedTabIndex == 1
 }
 
 internal fun shouldUseCompactInlinePortraitPlayerForIntroScroll(
@@ -129,6 +124,12 @@ internal fun resolveInlinePortraitPlayerCollapseProgress(
     return manualCollapseProgress
         .coerceIn(0f, 1f)
         .coerceAtLeast(compactForCommentTabProgress.coerceIn(0f, 1f))
+}
+
+internal fun resolveInlinePortraitPlayerCommentCollapseDurationMillis(
+    tabSwitchAnimationSpec: VideoContentTabSwitchAnimationSpec
+): Int {
+    return tabSwitchAnimationSpec.durationMs
 }
 
 internal fun resolvePortraitInlinePlayerLayoutSpec(

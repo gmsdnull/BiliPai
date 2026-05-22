@@ -100,6 +100,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.purebilibili.core.ui.blur.rememberRecoverableHazeState
 import com.android.purebilibili.core.ui.transition.videoPredictiveReturnTransform
 import com.android.purebilibili.core.store.PortraitPlayerCollapseMode
+import com.android.purebilibili.core.theme.LocalUiPreset
 //  已改用 MaterialTheme.colorScheme.primary
 
 import com.android.purebilibili.data.model.response.RelatedVideo
@@ -2840,6 +2841,10 @@ fun VideoDetailScreen(
                     val screenWidthDp = configuration.screenWidthDp.dp
                     val screenHeightDp = configuration.screenHeightDp.dp
                     val videoHeight = screenWidthDp * 9f / 16f  // 16:9 比例
+                    val uiPreset = LocalUiPreset.current
+                    val videoContentTabSwitchAnimationSpec = remember(uiPreset) {
+                        resolveVideoContentTabSwitchAnimationSpec(uiPreset)
+                    }
 
                     //  读取竖屏播放器滚动缩小模式
                     val portraitPlayerCollapseMode by com.android.purebilibili.core.store.SettingsManager
@@ -2855,16 +2860,12 @@ fun VideoDetailScreen(
                     )
                     var introFirstVisibleItemIndex by remember { mutableIntStateOf(0) }
                     var introFirstVisibleItemScrollOffset by remember { mutableIntStateOf(0) }
-                    var commentFirstVisibleItemIndex by remember { mutableIntStateOf(0) }
-                    var commentFirstVisibleItemScrollOffset by remember { mutableIntStateOf(0) }
                     val compactInlinePlayerForCommentTab =
                         shouldUseCompactInlinePortraitPlayerForCommentTab(
                             useOfficialInlinePortraitDetailExperience = useOfficialInlinePortraitDetailExperience,
                             selectedTabIndex = selectedVideoContentTabIndex,
                             isPortraitFullscreen = isPortraitFullscreen,
                             isCommentThreadVisible = subReplyState.visible,
-                            firstVisibleItemIndex = commentFirstVisibleItemIndex,
-                            firstVisibleItemScrollOffset = commentFirstVisibleItemScrollOffset,
                             collapseMode = portraitPlayerCollapseMode,
                             isVerticalVideo = isVerticalVideo
                         )
@@ -2980,7 +2981,9 @@ fun VideoDetailScreen(
                     val commentTabCollapseProgress by animateFloatAsState(
                         targetValue = if (compactInlinePlayerForCommentTab || compactInlinePlayerForIntroScroll) 1f else 0f,
                         animationSpec = tween(
-                            durationMillis = 260,
+                            durationMillis = resolveInlinePortraitPlayerCommentCollapseDurationMillis(
+                                videoContentTabSwitchAnimationSpec
+                            ),
                             easing = FastOutSlowInEasing
                         ),
                         label = "inline_portrait_comment_tab_collapse"
@@ -3406,10 +3409,6 @@ fun VideoDetailScreen(
                                                         onIntroScrollStateChange = { index, offset ->
                                                             introFirstVisibleItemIndex = index
                                                             introFirstVisibleItemScrollOffset = offset
-                                                        },
-                                                        onCommentScrollStateChange = { index, offset ->
-                                                            commentFirstVisibleItemIndex = index
-                                                            commentFirstVisibleItemScrollOffset = offset
                                                         }
                                                     )
 
