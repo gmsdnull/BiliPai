@@ -164,6 +164,49 @@ internal fun buildSponsorBlockVideoSnapshot(currentState: PlayerUiState): Sponso
     )
 }
 
+internal data class AudioModeCollectionPlaylist(
+    val items: List<PlaylistItem>,
+    val startIndex: Int
+)
+
+internal fun buildAudioModeCollectionPlaylist(
+    episodes: List<UgcEpisode>,
+    currentBvid: String,
+    currentCid: Long
+): AudioModeCollectionPlaylist? {
+    val playableEpisodes = episodes.filter { it.bvid.isNotBlank() }
+    val items = playableEpisodes
+        .map { episode ->
+            PlaylistItem(
+                bvid = episode.bvid,
+                title = episode.title.ifBlank {
+                    episode.arc?.title?.takeIf { title -> title.isNotBlank() } ?: episode.bvid
+                },
+                cover = episode.arc?.pic.orEmpty(),
+                owner = "",
+                duration = episode.arc?.duration?.toLong() ?: 0L
+            )
+        }
+    if (items.isEmpty()) return null
+
+    val exactIndex = playableEpisodes.indexOfFirst { episode ->
+        episode.bvid == currentBvid &&
+            currentCid > 0L &&
+            episode.cid == currentCid
+    }
+    val fallbackIndex = playableEpisodes.indexOfFirst { it.bvid == currentBvid }
+    val startIndex = when {
+        exactIndex >= 0 -> exactIndex
+        fallbackIndex >= 0 -> fallbackIndex
+        else -> 0
+    }.coerceIn(0, items.lastIndex)
+
+    return AudioModeCollectionPlaylist(
+        items = items,
+        startIndex = startIndex
+    )
+}
+
 internal data class PlaybackCdnFallbackState(
     val selectedVideoUrl: String = "",
     val selectedAudioUrl: String? = null,
@@ -2802,6 +2845,27 @@ class PlayerViewModel : ViewModel() {
      *  [新增] 更新播放列表
      */
     private fun updatePlaylist(currentInfo: com.android.purebilibili.data.model.response.ViewInfo, related: List<com.android.purebilibili.data.model.response.RelatedVideo>) {
+        if (_isInAudioMode.value) {
+            val collectionPlaylist = currentInfo.ugc_season?.let { season ->
+                buildAudioModeCollectionPlaylist(
+                    episodes = season.sections.flatMap { it.episodes },
+                    currentBvid = currentInfo.bvid,
+                    currentCid = currentInfo.cid
+                )
+            }
+            if (collectionPlaylist != null) {
+                PlaylistManager.setPlaylist(
+                    items = collectionPlaylist.items,
+                    startIndex = collectionPlaylist.startIndex
+                )
+                Logger.d(
+                    "PlayerVM",
+                    "🎵 听视频合集队列: ${collectionPlaylist.items.size} 项, 当前=${collectionPlaylist.startIndex}"
+                )
+                return
+            }
+        }
+
         val currentPlaylist = PlaylistManager.playlist.value
         val externalDecision = resolveExternalPlaylistSyncDecision(
             isExternalPlaylist = PlaylistManager.isExternalPlaylist.value,
