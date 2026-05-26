@@ -31,6 +31,50 @@ class HomeFeedAnonymizerPolicyTest {
     }
 
     @Test
+    fun enabledPlugin_stripsOnlyLoginCookiesForWebHomeFeed() {
+        val authCookieNames = listOf(
+            "SESSDATA",
+            "bili_jct",
+            "DedeUserID",
+            "DedeUserID__ckMd5",
+            "sid"
+        )
+
+        authCookieNames.forEach { cookieName ->
+            assertTrue(
+                shouldStripHomeFeedAuthCookie(
+                    pluginEnabled = true,
+                    host = "api.bilibili.com",
+                    encodedPath = "/x/web-interface/wbi/index/top/feed/rcmd",
+                    cookieName = cookieName
+                )
+            )
+        }
+        listOf("buvid3", "buvid4", "b_nut").forEach { cookieName ->
+            assertFalse(
+                shouldStripHomeFeedAuthCookie(
+                    pluginEnabled = true,
+                    host = "api.bilibili.com",
+                    encodedPath = "/x/web-interface/wbi/index/top/feed/rcmd",
+                    cookieName = cookieName
+                )
+            )
+        }
+    }
+
+    @Test
+    fun nonMatchingRequest_keepsLoginCookies() {
+        assertFalse(
+            shouldStripHomeFeedAuthCookie(
+                pluginEnabled = true,
+                host = "api.bilibili.com",
+                encodedPath = "/x/web-interface/nav",
+                cookieName = "SESSDATA"
+            )
+        )
+    }
+
+    @Test
     fun enabledPlugin_keepsCookiesForPlaybackDynamicUserAndMobileFeed() {
         val requests = listOf(
             "api.bilibili.com" to "/x/player/wbi/playurl",
