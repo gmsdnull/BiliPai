@@ -20,12 +20,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -58,6 +59,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -126,6 +128,28 @@ internal fun resolveVideoCommentSheetHostHeightFraction(
             topReservedPx = topReservedPx
         )
         VideoCommentSheetHostContent.HIDDEN -> 0f
+    }
+}
+
+internal fun resolveVideoCommentSheetHostHeightPx(
+    hostContent: VideoCommentSheetHostContent,
+    hostHeightPx: Int,
+    topReservedPx: Int
+): Int {
+    if (hostHeightPx <= 0) return 0
+    return when (hostContent) {
+        VideoCommentSheetHostContent.MAIN_LIST ->
+            (hostHeightPx * MAIN_COMMENT_SHEET_HEIGHT_FRACTION)
+                .roundToInt()
+                .coerceIn(0, hostHeightPx)
+
+        VideoCommentSheetHostContent.THREAD_DETAIL -> {
+            val reservedTopPx = topReservedPx.coerceIn(0, hostHeightPx)
+            val availableHeightPx = hostHeightPx - reservedTopPx
+            if (availableHeightPx > 0) availableHeightPx else hostHeightPx
+        }
+
+        VideoCommentSheetHostContent.HIDDEN -> 0
     }
 }
 
@@ -241,12 +265,6 @@ fun VideoCommentSheetHost(
         subReplyVisible = subReplyState.visible
     )
     val hostVisible = hostContent != VideoCommentSheetHostContent.HIDDEN
-    val sheetHeightFraction = resolveVideoCommentSheetHostHeightFraction(
-        hostContent = hostContent,
-        mainSheetVisible = mainSheetVisible,
-        screenHeightPx = screenHeightPx,
-        topReservedPx = topReservedPx
-    )
     val scrimAlpha = resolveVideoCommentSheetHostScrimAlpha(mainSheetVisible = mainSheetVisible)
     val dismissOnBackdropTap = shouldDismissVideoCommentSheetHostOnBackdropTap(
         mainSheetVisible = mainSheetVisible
@@ -440,7 +458,7 @@ fun VideoCommentSheetHost(
         enter = bottomSheetScrimEnterTransition(motionSpec),
         exit = bottomSheetScrimExitTransition(motionSpec)
     ) {
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = overlayVisual.scrimAlpha))
@@ -454,6 +472,16 @@ fun VideoCommentSheetHost(
                     }
                 )
         ) {
+            val density = LocalDensity.current
+            val hostHeightPx = with(density) { maxHeight.toPx().roundToInt() }
+            val sheetHeightPx = remember(hostContent, hostHeightPx, topReservedPx) {
+                resolveVideoCommentSheetHostHeightPx(
+                    hostContent = hostContent,
+                    hostHeightPx = hostHeightPx,
+                    topReservedPx = topReservedPx
+                )
+            }
+            val sheetHeight = with(density) { sheetHeightPx.toDp() }
             AnimatedVisibility(
                 visible = hostVisible,
                 enter = bottomSheetContentEnterTransition(motionSpec),
@@ -463,7 +491,7 @@ fun VideoCommentSheetHost(
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .fillMaxHeight(sheetHeightFraction)
+                        .height(sheetHeight)
                         .onSizeChanged { size ->
                             mainSheetMeasuredHeightPx = size.height.toFloat()
                         }

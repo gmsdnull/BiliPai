@@ -125,6 +125,42 @@ class VideoCommentSheetHostPolicyTest {
     }
 
     @Test
+    fun `thread detail height uses actual host height to align with reserved top`() {
+        assertEquals(
+            750,
+            resolveVideoCommentSheetHostHeightPx(
+                hostContent = VideoCommentSheetHostContent.THREAD_DETAIL,
+                hostHeightPx = 1200,
+                topReservedPx = 450
+            )
+        )
+    }
+
+    @Test
+    fun `main sheet pixel height keeps drawer fraction`() {
+        assertEquals(
+            720,
+            resolveVideoCommentSheetHostHeightPx(
+                hostContent = VideoCommentSheetHostContent.MAIN_LIST,
+                hostHeightPx = 1200,
+                topReservedPx = 450
+            )
+        )
+    }
+
+    @Test
+    fun `thread detail falls back to full host height when reserve is invalid`() {
+        assertEquals(
+            1200,
+            resolveVideoCommentSheetHostHeightPx(
+                hostContent = VideoCommentSheetHostContent.THREAD_DETAIL,
+                hostHeightPx = 1200,
+                topReservedPx = 1300
+            )
+        )
+    }
+
+    @Test
     fun `detached fullscreen thread detail should keep status bar padding`() {
         assertEquals(
             true,

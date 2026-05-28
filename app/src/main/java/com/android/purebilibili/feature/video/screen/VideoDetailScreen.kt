@@ -76,6 +76,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
@@ -1465,6 +1466,7 @@ fun VideoDetailScreen(
     
     //  [PiP修复] 记录视频播放器在屏幕上的位置，用于PiP窗口只显示视频区域
     var videoPlayerBounds by remember { mutableStateOf<android.graphics.Rect?>(null) }
+    var videoPlayerRootBottomPx by remember { mutableIntStateOf(0) }
     
     // 📱 [优化] isPortraitFullscreen 和 isVerticalVideo 现在从 playerState 获取（见 playerState 定义后）
     
@@ -3262,6 +3264,7 @@ fun VideoDetailScreen(
                             //  [PiP修复] 捕获视频播放器在屏幕上的位置
                             .onGloballyPositioned { layoutCoordinates ->
                                 val position = layoutCoordinates.positionInWindow()
+                                val rootPosition = layoutCoordinates.positionInRoot()
                                 val size = layoutCoordinates.size
                                 val nextBounds = android.graphics.Rect(
                                     position.x.toInt(),
@@ -3269,6 +3272,13 @@ fun VideoDetailScreen(
                                     position.x.toInt() + size.width,
                                     position.y.toInt() + size.height
                                 )
+                                val nextRootBottomPx = (rootPosition.y + size.height).roundToInt()
+                                if (
+                                    videoPlayerRootBottomPx == 0 ||
+                                    abs(videoPlayerRootBottomPx - nextRootBottomPx) > 3
+                                ) {
+                                    videoPlayerRootBottomPx = nextRootBottomPx
+                                }
                                 if (!hasMeaningfulBoundsChange(videoPlayerBounds, nextBounds)) {
                                     return@onGloballyPositioned
                                 }
@@ -3964,14 +3974,14 @@ fun VideoDetailScreen(
             isLandscape,
             isFullscreenMode,
             isPortraitFullscreen,
-            videoPlayerBounds,
+            videoPlayerRootBottomPx,
             fallbackPlayerBottomPx
         ) {
             resolveDanmakuDialogTopReservePx(
                 isLandscape = isLandscape,
                 isFullscreenMode = isFullscreenMode,
                 isPortraitFullscreen = isPortraitFullscreen,
-                playerBottomPx = videoPlayerBounds?.bottom,
+                playerBottomPx = videoPlayerRootBottomPx.takeIf { it > 0 },
                 fallbackPlayerBottomPx = fallbackPlayerBottomPx
             )
         }
