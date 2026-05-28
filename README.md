@@ -15,7 +15,7 @@
 </p>
 
 <p>
-  <img src="https://img.shields.io/badge/Version-8.5.0-007AFF?style=flat-square&labelColor=ffffff" alt="Version 8.5.0" />
+  <img src="https://img.shields.io/badge/Version-8.6.0-007AFF?style=flat-square&labelColor=ffffff" alt="Version 8.6.0" />
   <img src="https://img.shields.io/badge/Android-8.0%2B-34C759?style=flat-square&logo=android&logoColor=white" alt="Android 8.0+" />
   <img src="https://img.shields.io/badge/Kotlin-100%25-7F52FF?style=flat-square&logo=kotlin&logoColor=white" alt="Kotlin" />
   <img src="https://img.shields.io/badge/License-GPL--3.0-FF3B30?style=flat-square" alt="GPL-3.0" />
@@ -37,7 +37,7 @@
   </a>
 </p>
 
-<sub>README 更新：2026-05-27 · 当前构建版本以 app/build.gradle.kts 为准 · 发布记录以 <a href="CHANGELOG.md">CHANGELOG.md</a> 为准</sub>
+<sub>README 更新：2026-05-28 · 当前构建版本以 app/build.gradle.kts 为准 · 发布记录以 <a href="CHANGELOG.md">CHANGELOG.md</a> 为准</sub>
 
 </div>
 
@@ -182,16 +182,16 @@ cd BiliPai
 
 ## 最近更新
 
-当前仓库版本号已更新到 `8.5.0 / versionCode 209`。公开发布说明请以 [CHANGELOG.md](CHANGELOG.md) 为准；最新完整记录为 `v8.5.0`：
+当前仓库版本号已更新到 `8.6.0 / versionCode 210`。公开发布说明请以 [CHANGELOG.md](CHANGELOG.md) 为准；最新完整记录为 `v8.6.0`：
 
-- 新增视频笔记首版：支持私有笔记读取、保存、删除，公开笔记列表入口，以及 B 站 note JSON 适配。
-- 新增富文本笔记编辑器，支持加粗、高亮、无序列表、撤销/重做、时间点插入与回跳；编辑器内部支持 Markdown 导入/导出作为中间格式。
-- AI 总结可一键生成可编辑笔记草稿，已有私有笔记时追加到末尾，必须用户手动保存。
-- 笔记和 AI 草稿支持通过系统分享面板分享到 Telegram、微信、X、邮件等社交应用。
-- 增强 AI 总结可重试失败处理，减少排队和临时失败时的空结果。
-- 增强直播观看端一期能力，补齐直播弹幕区域和画面比例处理。PR #420 由 **@jay3-yy** 合并。
-- 修复底栏、首页卡片菜单、MIUIX 顶栏、硬解设置缓存、沉浸状态栏、长按倍速引导、动态页和稍后再看交互问题。
-- 修复 DASH 投屏回退音频轨缺失，PR #411 由 **@lekoOwO** 贡献；并移除播放器统计信息周围的黑色遮罩层。
+- 修复正式包播放器点击后控制层不响应，并补齐 Release 保留规则。
+- 修复分 P 切换继承旧进度，播放进度按 `bvid#cid` 精确隔离。
+- 新增视频笔记显示总开关和默认折叠开关；关闭后详情页不再加载或渲染视频笔记。
+- 修正 PBP 请求接口，弹幕密度进度条接入 PBP 数据，并整理弹幕设置显示区域。
+- 评论楼中楼默认内联展开，补齐楼中楼控制字段解析。
+- 统一 UP 认证蓝黄标策略，搜索、关注与空间页显示更一致。
+- 修复空间投稿布局切换闪退、设置页语义图标重复和长按倍速提示重复弹出。
+- 修复详情推荐来源、共享元素返回横向过渡和相关推荐卡片共享元素过渡。
 
 ## 路线图
 

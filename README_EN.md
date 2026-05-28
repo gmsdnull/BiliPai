@@ -5,11 +5,11 @@
 </p>
 
 <p align="center">
-  <sub>Last updated: 2026-05-27 · Synced to v8.5.0 (source of truth: <a href="CHANGELOG.md">CHANGELOG</a> + code)</sub>
+  <sub>Last updated: 2026-05-28 · Synced to v8.6.0 (source of truth: <a href="CHANGELOG.md">CHANGELOG</a> + code)</sub>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-8.5.0-fb7299?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/Version-8.6.0-fb7299?style=flat-square" alt="Version">
   <img src="https://img.shields.io/github/stars/jay3-yy/BiliPai?style=flat-square&color=yellow" alt="Stars">
   <img src="https://img.shields.io/github/forks/jay3-yy/BiliPai?style=flat-square&color=green" alt="Forks">
   <img src="https://img.shields.io/github/last-commit/jay3-yy/BiliPai?style=flat-square&color=purple" alt="Last Commit">
@@ -436,16 +436,16 @@ A lightweight plugin format requiring **no coding**, just a simple JSON file to 
 
 See full changelog: [CHANGELOG.md](CHANGELOG.md)
 
-### Latest (v8.5.0 · 2026-05-27)
+### Latest (v8.6.0 · 2026-05-28)
 
-- Bumped the app to `8.5.0` with `versionCode` `209`.
-- Added the first native video-notes workflow: private note loading, saving, deletion, public-note list entry, and Bilibili note JSON adaptation.
-- Added a rich text note editor with bold, highlight, unordered lists, undo/redo, timestamps, timestamp seeking, and Markdown import/export as the editor interchange format.
-- Added AI-summary-to-note drafts. Existing private notes are appended instead of overwritten, and drafts are never saved until the user confirms.
-- Added system sharing for saved notes and AI drafts, so Telegram, WeChat, X, email, and other installed apps can receive note text.
-- Improved AI summary retry handling for queued and transient request failures.
-- Improved live viewing basics, including live danmaku area and video aspect-ratio handling. PR #420 was merged by **@jay3-yy**.
-- Fixed bottom bar recovery, home card menu positioning, Miuix top-bar alignment, hardware-decoder setting cache sync, immersive video system bars, long-press speed guidance, dynamic/watch-later interactions, DASH cast fallback audio from PR #411 by **@lekoOwO**, and the player-stats background layer.
+- Bumped the app to `8.6.0` with `versionCode` `210`.
+- Fixed the release player overlay tap regression and kept the related player overlay classes for minified builds.
+- Isolated multi-part playback progress by exact `bvid#cid`, so switching parts no longer reuses another part's progress.
+- Added video-note visibility and default-collapsed settings; disabling video notes now stops both loading and rendering on video details.
+- Fixed the PBP request API, connected PBP data to the danmaku density progress bar, and clarified danmaku display-area settings.
+- Made comment sub-replies expand inline by default and added parsing for sub-reply control fields.
+- Unified official UP verification badge rendering across search, following, and space pages.
+- Fixed space submission layout crashes, duplicated semantic setting icons, repeated long-press speed prompts, related-video source tracking, and shared-element return transitions.
 
 ---
 
