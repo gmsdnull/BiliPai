@@ -1869,14 +1869,14 @@ fun AppNavigation(
                                             )
                                         )
                                     },
-                                    onCollectionClick = { collectionId, collectionMid, title, ownerName ->
+                                    onCollectionClick = { route ->
                                         pushNavigation3Key(
                                             BiliPaiNavKey.SeasonSeriesDetail(
-                                                type = "season",
-                                                id = collectionId,
-                                                mid = collectionMid,
-                                                title = title,
-                                                ownerName = ownerName
+                                                type = route.type,
+                                                id = route.id,
+                                                mid = route.mid,
+                                                title = route.title,
+                                                ownerName = route.ownerName
                                             )
                                         )
                                     },
@@ -1967,14 +1967,14 @@ fun AppNavigation(
                                     onVideoClick = { bvid, cid, cover ->
                                         navigateToVideoInNavigation3(bvid, cid, cover)
                                     },
-                                    onCollectionClick = { collectionId, collectionMid, collectionTitle, ownerName ->
+                                    onCollectionClick = { route ->
                                         pushNavigation3Key(
                                             BiliPaiNavKey.SeasonSeriesDetail(
-                                                type = "season",
-                                                id = collectionId,
-                                                mid = collectionMid,
-                                                title = collectionTitle,
-                                                ownerName = ownerName
+                                                type = route.type,
+                                                id = route.id,
+                                                mid = route.mid,
+                                                title = route.title,
+                                                ownerName = route.ownerName
                                             )
                                         )
                                     }

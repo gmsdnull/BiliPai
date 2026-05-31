@@ -285,6 +285,13 @@ interface BilibiliApi {
         @Query("platform") platform: String = "web"
     ): FavoriteResourceResponse
 
+    @GET("x/space/fav/season/list")
+    suspend fun getFavoriteSeasonList(
+        @Query("season_id") seasonId: Long,
+        @Query("pn") pn: Int = 1,
+        @Query("ps") ps: Int = 20
+    ): FavoriteResourceResponse
+
     // [新增] 批量删除收藏资源 (取消收藏)
     @retrofit2.http.FormUrlEncoded
     @retrofit2.http.POST("x/v3/fav/resource/batch-del")

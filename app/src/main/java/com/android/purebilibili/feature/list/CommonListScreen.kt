@@ -161,7 +161,7 @@ fun CommonListScreen(
     onBack: () -> Unit,
     onVideoClick: (String, Long, String) -> Unit,
     onUpClick: ((Long) -> Unit)? = null,
-    onCollectionClick: ((Long, Long, String, String) -> Unit)? = null,
+    onCollectionClick: ((FavoriteCollectionRoute) -> Unit)? = null,
     onFavoriteFolderClick: ((Long, Long, String, String) -> Unit)? = null,
     onPlayAllAudioClick: ((String, Long) -> Unit)? = null,
     globalHazeState: HazeState? = null, // [新增] 接收全局 HazeState
@@ -471,7 +471,7 @@ fun CommonListScreen(
     val favoriteBrowseOptions = remember {
         listOf(
             PlaybackSegmentOption(FavoriteBrowseSection.OWNED, "收藏夹"),
-            PlaybackSegmentOption(FavoriteBrowseSection.SUBSCRIBED, "订阅")
+            PlaybackSegmentOption(FavoriteBrowseSection.SUBSCRIBED, "追更")
         )
     }
 
@@ -580,12 +580,7 @@ fun CommonListScreen(
                         onFolderClick = { folder ->
                             val collectionRoute = resolveSubscribedFavoriteCollectionRoute(folder)
                             if (collectionRoute != null) {
-                                onCollectionClick?.invoke(
-                                    collectionRoute.id,
-                                    collectionRoute.mid,
-                                    collectionRoute.title,
-                                    collectionRoute.ownerName
-                                )
+                                onCollectionClick?.invoke(collectionRoute)
                             } else {
                                 onFavoriteFolderClick?.invoke(
                                     resolveFavoriteFolderMediaId(folder),
@@ -983,7 +978,7 @@ fun CommonListScreen(
                         com.android.purebilibili.core.ui.components.IOSSearchBar(
                             query = searchQuery,
                             onQueryChange = { searchQuery = it },
-                            placeholder = if (isSubscribedBrowse) "搜索订阅收藏夹" else "搜索视频",
+                            placeholder = if (isSubscribedBrowse) "搜索追更" else "搜索视频",
                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.22f),
                             heightOverride = favoriteHeaderLayout.searchBarHeightDp.dp
                         )
@@ -1247,7 +1242,7 @@ private fun CommonListContent(
     showOnlineCount: Boolean,
     videoCardAppearance: CommonListVideoCardAppearance,
     onVideoClick: (String, Long, String) -> Unit,
-    onCollectionClick: ((Long, Long, String, String) -> Unit)? = null,
+    onCollectionClick: ((FavoriteCollectionRoute) -> Unit)? = null,
     onLoadMore: () -> Unit,
     onUnfavorite: ((com.android.purebilibili.data.model.response.VideoItem) -> Unit)?,
     historyDeleteSession: HistoryDeleteSession? = null,
@@ -1384,12 +1379,7 @@ private fun CommonListContent(
                                     item = video,
                                     onClick = {
                                         resolveFavoriteCollectionRoute(video)?.let { route ->
-                                            onCollectionClick?.invoke(
-                                                route.id,
-                                                route.mid,
-                                                route.title,
-                                                route.ownerName
-                                            )
+                                            onCollectionClick?.invoke(route)
                                         }
                                     }
                                 )
@@ -1634,7 +1624,7 @@ private fun FavoriteSubscribedFolderList(
     onFolderClick: (com.android.purebilibili.data.model.response.FavFolder) -> Unit
 ) {
     if (folders.isEmpty()) {
-        val message = if (searchQuery.isNotBlank()) "没有找到相关订阅" else "暂无订阅收藏夹"
+        val message = if (searchQuery.isNotBlank()) "没有找到相关追更" else "暂无追更合集"
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(text = message, color = Color.Gray)
         }

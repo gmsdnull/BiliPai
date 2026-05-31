@@ -58,6 +58,16 @@ class PrivacyAuthenticationPolicyTest {
                 )
             )
         )
+        assertTrue(
+            shouldRequirePrivacyAuthentication(
+                privacyAuthenticationEnabled = true,
+                privacySessionUnlocked = false,
+                target = PrivacyNavigationTarget(
+                    routeBase = "season_series_detail",
+                    seasonSeriesType = "favorite_season"
+                )
+            )
+        )
         assertFalse(
             shouldRequirePrivacyAuthentication(
                 privacyAuthenticationEnabled = true,

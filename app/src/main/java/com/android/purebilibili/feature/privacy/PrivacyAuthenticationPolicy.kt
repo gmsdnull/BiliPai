@@ -49,7 +49,8 @@ internal fun isPrivacyProtectedNavigationTarget(target: PrivacyNavigationTarget)
         "message/like_me",
         "message/system_notice",
         "chat" -> true
-        "season_series_detail" -> target.seasonSeriesType == "favorite"
+        "season_series_detail" -> target.seasonSeriesType == "favorite" ||
+            target.seasonSeriesType == "favorite_season"
         else -> false
     }
 }
