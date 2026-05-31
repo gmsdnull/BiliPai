@@ -318,6 +318,17 @@ class TopTabRefractionPolicyTest {
         assertFalse(source.contains("rememberCombinedBackdrop(backdrop, tabsBackdrop)"))
     }
 
+    @Test
+    fun `md3 liquid top tab uses moving capsule instead of bottom underline`() {
+        val source = loadSource(
+            "app/src/main/java/com/android/purebilibili/feature/home/components/TopBar.kt"
+        )
+
+        assertTrue(source.contains("val shouldUseMd3LiquidCapsule = effectiveRenderer == HomeTopTabRenderer.MD3"))
+        assertTrue(source.contains(".height((rowHeight - 8.dp).coerceAtLeast(30.dp))"))
+        assertTrue(source.contains("if (shouldUseLiquidGlassIndicator && !shouldUseMd3LiquidCapsule)"))
+    }
+
     private fun loadSource(path: String): String {
         val normalizedPath = path.removePrefix("app/")
         val sourceFile = listOf(

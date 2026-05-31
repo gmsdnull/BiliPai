@@ -24,7 +24,7 @@ class TopTabStylePolicyTest {
         )
 
         assertEquals(true, state.floating)
-        assertEquals(TopTabMaterialMode.BLUR, state.materialMode)
+        assertEquals(TopTabMaterialMode.LIQUID_GLASS, state.materialMode)
     }
 
     @Test
@@ -64,7 +64,7 @@ class TopTabStylePolicyTest {
     }
 
     @Test
-    fun `docked with liquid downgrades to blur when blur enabled`() {
+    fun `docked with liquid uses liquid glass when blur enabled`() {
         val state = resolveTopTabStyle(
             isBottomBarFloating = false,
             isBottomBarBlurEnabled = true,
@@ -72,11 +72,11 @@ class TopTabStylePolicyTest {
         )
 
         assertEquals(false, state.floating)
-        assertEquals(TopTabMaterialMode.BLUR, state.materialMode)
+        assertEquals(TopTabMaterialMode.LIQUID_GLASS, state.materialMode)
     }
 
     @Test
-    fun `docked without blur uses plain`() {
+    fun `docked with liquid uses liquid glass without blur`() {
         val state = resolveTopTabStyle(
             isBottomBarFloating = false,
             isBottomBarBlurEnabled = false,
@@ -84,7 +84,7 @@ class TopTabStylePolicyTest {
         )
 
         assertEquals(false, state.floating)
-        assertEquals(TopTabMaterialMode.PLAIN, state.materialMode)
+        assertEquals(TopTabMaterialMode.LIQUID_GLASS, state.materialMode)
     }
 
     @Test
@@ -106,17 +106,23 @@ class TopTabStylePolicyTest {
     }
 
     @Test
-    fun `top tab liquid glass is disabled regardless of interaction budget`() {
-        assertFalse(
+    fun `top tab liquid glass follows requested state regardless of interaction budget`() {
+        assertTrue(
             resolveEffectiveTopTabLiquidGlassEnabled(
                 isLiquidGlassEnabled = true,
                 interactionBudget = HomeInteractionMotionBudget.FULL
             )
         )
-        assertFalse(
+        assertTrue(
             resolveEffectiveTopTabLiquidGlassEnabled(
                 isLiquidGlassEnabled = true,
                 interactionBudget = HomeInteractionMotionBudget.REDUCED
+            )
+        )
+        assertFalse(
+            resolveEffectiveTopTabLiquidGlassEnabled(
+                isLiquidGlassEnabled = false,
+                interactionBudget = HomeInteractionMotionBudget.FULL
             )
         )
     }

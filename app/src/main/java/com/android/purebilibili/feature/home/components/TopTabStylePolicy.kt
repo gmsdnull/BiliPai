@@ -677,6 +677,7 @@ fun resolveTopTabStyle(
     isLiquidGlassEnabled: Boolean
 ): TopTabVisualState {
     val materialMode = when {
+        isLiquidGlassEnabled -> TopTabMaterialMode.LIQUID_GLASS
         isBottomBarBlurEnabled -> TopTabMaterialMode.BLUR
         else -> TopTabMaterialMode.PLAIN
     }
@@ -698,7 +699,7 @@ internal fun resolveEffectiveTopTabLiquidGlassEnabled(
     isLiquidGlassEnabled: Boolean,
     interactionBudget: HomeInteractionMotionBudget
 ): Boolean {
-    return false
+    return isLiquidGlassEnabled
 }
 
 internal fun shouldDrawHomeTopTabOuterChromeSurface(

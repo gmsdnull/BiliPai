@@ -840,9 +840,9 @@ class iOSHomeHeaderVisualPolicyTest {
     }
 
     @Test
-    fun `top chrome uses blur when liquid glass was enabled`() {
+    fun `top chrome uses liquid glass when enabled`() {
         assertEquals(
-            TopTabMaterialMode.BLUR,
+            TopTabMaterialMode.LIQUID_GLASS,
             resolveHomeTopChromeMaterialMode(
                 isHeaderBlurEnabled = true,
                 isBottomBarBlurEnabled = true,
@@ -876,9 +876,9 @@ class iOSHomeHeaderVisualPolicyTest {
     }
 
     @Test
-    fun `top chrome uses blur from linked bottom bar when liquid glass was enabled`() {
+    fun `top chrome uses liquid glass from linked bottom bar when enabled`() {
         assertEquals(
-            TopTabMaterialMode.BLUR,
+            TopTabMaterialMode.LIQUID_GLASS,
             resolveHomeTopChromeMaterialMode(
                 isHeaderBlurEnabled = false,
                 isBottomBarBlurEnabled = true,
@@ -926,8 +926,8 @@ class iOSHomeHeaderVisualPolicyTest {
     }
 
     @Test
-    fun `top chrome liquid glass setting is ignored after top liquid removal`() {
-        assertFalse(
+    fun `top chrome follows effective shared liquid glass setting`() {
+        assertTrue(
             resolveHomeTopChromeLiquidGlassEnabled(
                 homeSettings = HomeSettings(
                     isTopBarLiquidGlassEnabled = false,
@@ -945,6 +945,16 @@ class iOSHomeHeaderVisualPolicyTest {
                     androidNativeLiquidGlassEnabled = true
                 ),
                 uiPreset = UiPreset.MD3
+            )
+        )
+        assertTrue(
+            resolveHomeTopChromeLiquidGlassEnabled(
+                homeSettings = HomeSettings(
+                    isTopBarLiquidGlassEnabled = false,
+                    isBottomBarLiquidGlassEnabled = true,
+                    androidNativeLiquidGlassEnabled = false
+                ),
+                uiPreset = UiPreset.IOS
             )
         )
     }
@@ -1182,9 +1192,9 @@ class iOSHomeHeaderVisualPolicyTest {
     }
 
     @Test
-    fun `miuix top chrome keeps blur when global liquid glass is enabled`() {
+    fun `miuix top chrome follows global liquid glass when enabled`() {
         assertEquals(
-            TopTabMaterialMode.BLUR,
+            TopTabMaterialMode.LIQUID_GLASS,
             resolveHomeTopChromeMaterialMode(
                 isHeaderBlurEnabled = true,
                 isBottomBarBlurEnabled = true,

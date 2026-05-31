@@ -891,6 +891,25 @@ private fun LightweightHomeTopTabs(
                 }
             }
         }
+        val md3LiquidCapsuleWidth = (itemWidth - 6.dp).coerceAtLeast(md3IndicatorWidth)
+        val md3LiquidCapsuleTranslationXPx by remember(
+            topTabIndicatorPosition,
+            itemWidth,
+            md3LiquidCapsuleWidth,
+            density,
+            listState
+        ) {
+            derivedStateOf {
+                with(density) {
+                    resolveMd3TopTabIndicatorTranslationPx(
+                        absolutePagerPosition = topTabIndicatorPosition,
+                        itemWidthPx = itemWidth.toPx(),
+                        rowScrollOffsetPx = rowScrollOffsetPx,
+                        indicatorWidthPx = md3LiquidCapsuleWidth.toPx()
+                    )
+                }
+            }
+        }
         val shouldUseMovingIosCapsule = effectiveRenderer == HomeTopTabRenderer.IOS &&
             !skinPlainStyle &&
             !hasSkinStickerIcons
@@ -898,6 +917,8 @@ private fun LightweightHomeTopTabs(
         val shouldUseLiquidGlassIndicator = (isLiquidGlassEnabled || shouldForceDragLiquidGlassIndicator) &&
             !skinPlainStyle &&
             !hasSkinStickerIcons
+        val shouldUseMd3LiquidCapsule = effectiveRenderer == HomeTopTabRenderer.MD3 &&
+            shouldUseLiquidGlassIndicator
         val measuredSelectedItemLeftPx by remember(shouldUseMovingIosCapsule) {
             derivedStateOf {
                 if (!shouldUseMovingIosCapsule ||
@@ -1032,6 +1053,42 @@ private fun LightweightHomeTopTabs(
                         )
                     }
                 }
+                if (shouldUseMd3LiquidCapsule) {
+                    val capsuleShape = resolveSharedBottomBarCapsuleShape()
+                    BottomBarLiquidIndicatorSurface(
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .graphicsLayer {
+                                translationX = md3LiquidCapsuleTranslationXPx + topTabPanelOffsetPx
+                            }
+                            .width(md3LiquidCapsuleWidth)
+                            .height((rowHeight - 8.dp).coerceAtLeast(30.dp)),
+                        shape = capsuleShape,
+                        liquidGlassEnabled = true,
+                        backdrop = backdrop,
+                        hasExternalBackdrop = backdrop != null,
+                        indicatorLensSpec = topTabIndicatorLensSpec,
+                        indicatorHighlightAlpha = topTabIndicatorHighlightAlpha,
+                        indicatorGlowAlpha = topTabIndicatorGlowAlpha,
+                        motionProgress = topTabMotionProgress,
+                        idleSurfaceColor = if (isDarkTheme) {
+                            Color.White.copy(alpha = 0.1f)
+                        } else {
+                            Color.Black.copy(alpha = 0.1f)
+                        },
+                        layerBlock = {
+                            val indicatorLayerTransform = resolveBottomBarIndicatorLayerTransform(
+                                motionProgress = topTabMotionProgress,
+                                velocityItemsPerSecond = topTabDragState.deformationVelocityItemsPerSecond,
+                                isDragging = topTabDragActive,
+                                dragScaleProgress = topTabIndicatorLayerScaleProgress,
+                                motionSpec = topTabDragMotionSpec
+                            )
+                            scaleX = indicatorLayerTransform.scaleX
+                            scaleY = indicatorLayerTransform.scaleY
+                        }
+                    )
+                }
                 LazyRow(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
@@ -1107,7 +1164,7 @@ private fun LightweightHomeTopTabs(
                     } else {
                         resolveMd3TopTabIndicatorBottomPadding()
                     }
-                    if (shouldUseLiquidGlassIndicator) {
+                    if (shouldUseLiquidGlassIndicator && !shouldUseMd3LiquidCapsule) {
                         BottomBarLiquidIndicatorSurface(
                             modifier = Modifier
                                 .align(Alignment.BottomStart)
