@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.android.purebilibili.core.theme.resolveAdaptivePrimaryAccentColors
 import com.android.purebilibili.core.theme.iOSYellow
 import com.android.purebilibili.core.ui.AdaptiveScaffold
 import com.android.purebilibili.core.ui.AdaptiveTopAppBar
@@ -973,6 +974,7 @@ private fun BangumiDetailMetaSection(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        val restrictionColors = resolveAdaptivePrimaryAccentColors(MaterialTheme.colorScheme)
         if (metaChips.isNotEmpty()) {
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -1008,8 +1010,8 @@ private fun BangumiDetailMetaSection(
                             )
                         },
                         colors = SuggestionChipDefaults.suggestionChipColors(
-                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                            labelColor = MaterialTheme.colorScheme.onTertiaryContainer
+                            containerColor = restrictionColors.backgroundColor,
+                            labelColor = restrictionColors.contentColor
                         )
                     )
                 }
@@ -1143,17 +1145,18 @@ private fun EpisodeChip(
                 
                 // 角标（如：会员）
                 if (episode.badge.isNotEmpty()) {
+                    val badgeColors = resolveAdaptivePrimaryAccentColors(MaterialTheme.colorScheme)
                     Surface(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .padding(4.dp),
-                        color = MaterialTheme.colorScheme.primary,
+                        color = badgeColors.backgroundColor,
                         shape = RoundedCornerShape(4.dp)
                     ) {
                         Text(
                             text = episode.badge,
                             modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
+                            color = badgeColors.contentColor,
                             fontSize = 9.sp
                         )
                     }
@@ -1392,17 +1395,18 @@ private fun EpisodeListItem(
             
             // VIP 角标
             if (episode.badge.isNotEmpty()) {
+                val badgeColors = resolveAdaptivePrimaryAccentColors(MaterialTheme.colorScheme)
                 Surface(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(2.dp),
-                    color = MaterialTheme.colorScheme.primary,
+                    color = badgeColors.backgroundColor,
                     shape = RoundedCornerShape(2.dp)
                 ) {
                     Text(
                         text = episode.badge,
                         modifier = Modifier.padding(horizontal = 3.dp, vertical = 1.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
+                        color = badgeColors.contentColor,
                         fontSize = 8.sp
                     )
                 }

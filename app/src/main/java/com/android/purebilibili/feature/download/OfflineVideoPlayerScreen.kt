@@ -39,12 +39,14 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
+import com.android.purebilibili.core.theme.resolveAdaptivePrimaryAccentColors
 import com.android.purebilibili.core.util.FormatUtils
 import com.android.purebilibili.feature.video.player.MiniPlayerManager
 import com.android.purebilibili.feature.video.danmaku.configureAsPassiveDanmakuOverlay
 import com.android.purebilibili.feature.video.danmaku.rememberDanmakuManager
 import com.bytedance.danmaku.render.engine.DanmakuView
 import io.github.alexzhirkevich.cupertino.icons.CupertinoIcons
+import io.github.alexzhirkevich.cupertino.icons.filled.*
 import io.github.alexzhirkevich.cupertino.icons.outlined.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -116,6 +118,7 @@ fun OfflineVideoPlayerScreen(
     var originalSpeed by remember { mutableFloatStateOf(1.0f) }
     var longPressSpeedVisible by remember { mutableStateOf(false) }
     val longPressSpeed = 2.0f
+    var danmakuEnabled by remember(currentTaskId) { mutableStateOf(true) }
     
     // 双击跳转秒数
     val seekForwardSeconds = 10
@@ -185,6 +188,15 @@ fun OfflineVideoPlayerScreen(
             }
         }
     }
+    val danmakuAvailable = shouldShowOfflineDanmakuControl(
+        localSegmentCount = localDanmakuSegments.size,
+        isAudioOnly = task.isAudioOnly
+    )
+    val showDanmakuLayer = shouldShowOfflineDanmakuLayer(
+        localSegmentCount = localDanmakuSegments.size,
+        isAudioOnly = task.isAudioOnly,
+        danmakuEnabled = danmakuEnabled
+    )
 
     fun persistCurrentPlaybackPosition(activeTask: DownloadTask, activePlayer: ExoPlayer) {
         DownloadManager.updatePlaybackPosition(
@@ -323,6 +335,14 @@ fun OfflineVideoPlayerScreen(
     LaunchedEffect(danmakuManager, task.id, localDanmakuSegments) {
         if (localDanmakuSegments.isNotEmpty()) {
             danmakuManager.loadLocalDanmaku(task.cid, localDanmakuSegments)
+        }
+    }
+
+    LaunchedEffect(danmakuManager, showDanmakuLayer) {
+        if (showDanmakuLayer) {
+            danmakuManager.show()
+        } else {
+            danmakuManager.hide()
         }
     }
 
@@ -563,7 +583,7 @@ fun OfflineVideoPlayerScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        if (localDanmakuSegments.isNotEmpty() && !task.isAudioOnly) {
+        if (danmakuAvailable) {
             AndroidView(
                 factory = { ctx ->
                     DanmakuView(ctx).apply {
@@ -573,6 +593,11 @@ fun OfflineVideoPlayerScreen(
                     }
                 },
                 update = { view ->
+                    view.visibility = if (showDanmakuLayer) {
+                        android.view.View.VISIBLE
+                    } else {
+                        android.view.View.GONE
+                    }
                     if (view.width > 0 && view.height > 0) {
                         val sizeTag = "${view.width}x${view.height}"
                         if (view.tag != sizeTag) {
@@ -867,6 +892,7 @@ fun OfflineVideoPlayerScreen(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val activeControlColors = resolveAdaptivePrimaryAccentColors(MaterialTheme.colorScheme)
                     // 播放/暂停按钮
                     IconButton(
                         onClick = {
@@ -897,11 +923,39 @@ fun OfflineVideoPlayerScreen(
                     )
                     
                     Spacer(modifier = Modifier.weight(1f))
+
+                    if (danmakuAvailable) {
+                        Surface(
+                            onClick = { danmakuEnabled = !danmakuEnabled },
+                            color = if (danmakuEnabled) {
+                                activeControlColors.backgroundColor.copy(alpha = 0.9f)
+                            } else {
+                                Color.White.copy(alpha = 0.15f)
+                            },
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                Icon(
+                                    if (danmakuEnabled) CupertinoIcons.Filled.TextBubble else CupertinoIcons.Outlined.TextBubble,
+                                    contentDescription = if (danmakuEnabled) "关闭弹幕" else "开启弹幕",
+                                    tint = if (danmakuEnabled) activeControlColors.contentColor else Color.White,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
                     
                     // 📺 全屏按钮
                     Surface(
                         onClick = { toggleFullscreen() },
-                        color = if (!isFullscreen) MaterialTheme.colorScheme.primary.copy(alpha = 0.9f) else Color.White.copy(alpha = 0.15f),
+                        color = if (!isFullscreen) {
+                            activeControlColors.backgroundColor.copy(alpha = 0.9f)
+                        } else {
+                            Color.White.copy(alpha = 0.15f)
+                        },
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier.size(40.dp)
                     ) {
@@ -909,7 +963,7 @@ fun OfflineVideoPlayerScreen(
                             Icon(
                                 if (isFullscreen) CupertinoIcons.Default.ArrowDownRightAndArrowUpLeft else CupertinoIcons.Default.ArrowUpLeftAndArrowDownRight,
                                 contentDescription = if (isFullscreen) "退出全屏" else "全屏",
-                                tint = Color.White,
+                                tint = if (!isFullscreen) activeControlColors.contentColor else Color.White,
                                 modifier = Modifier.size(22.dp)
                             )
                         }
@@ -981,11 +1035,47 @@ private fun OfflineProgressBar(
         modifier = Modifier
             .fillMaxWidth()
             .height(24.dp)
-            .pointerInput(Unit) {
+            .pointerInput(duration) {
                 detectTapGestures { offset ->
-                    val newProgress = (offset.x / size.width).coerceIn(0f, 1f)
-                    onSeek((newProgress * duration).toLong())
+                    val targetPosition = resolveOfflineSeekPositionFromTouch(
+                        touchX = offset.x,
+                        containerWidthPx = size.width.toFloat(),
+                        durationMs = duration
+                    )
+                    tempProgress = if (duration > 0L) {
+                        targetPosition.toFloat() / duration.toFloat()
+                    } else {
+                        0f
+                    }
+                    onSeek(targetPosition)
                 }
+            }
+            .pointerInput(duration) {
+                detectDragGestures(
+                    onDragStart = { offset ->
+                        isDragging = true
+                        tempProgress = resolveOfflineSeekProgressFromTouch(
+                            touchX = offset.x,
+                            containerWidthPx = size.width.toFloat()
+                        )
+                    },
+                    onDrag = { change, _ ->
+                        change.consume()
+                        tempProgress = resolveOfflineSeekProgressFromTouch(
+                            touchX = change.position.x,
+                            containerWidthPx = size.width.toFloat()
+                        )
+                    },
+                    onDragEnd = {
+                        val targetPosition = (tempProgress.coerceIn(0f, 1f) * duration.coerceAtLeast(0L)).toLong()
+                        isDragging = false
+                        onSeek(targetPosition)
+                    },
+                    onDragCancel = {
+                        isDragging = false
+                        tempProgress = progress
+                    }
+                )
             },
         contentAlignment = Alignment.CenterStart
     ) {
@@ -1018,8 +1108,8 @@ private fun OfflineProgressBar(
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
-                    .size(12.dp)
-                    .offset(x = 6.dp)
+                    .size(if (isDragging) 16.dp else 12.dp)
+                    .offset(x = if (isDragging) 8.dp else 6.dp)
                     .background(primaryColor, CircleShape)
             )
         }
