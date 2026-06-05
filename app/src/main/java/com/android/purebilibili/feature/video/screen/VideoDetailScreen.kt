@@ -172,6 +172,7 @@ import com.android.purebilibili.core.ui.transition.resolveVideoCardSharedTransit
 import com.android.purebilibili.core.ui.transition.resolveVideoSharedTransitionSourceCornerDp
 import com.android.purebilibili.core.ui.transition.resolveVideoSharedTransitionVisualSpec
 import com.android.purebilibili.core.ui.transition.shouldEnableVideoCoverSharedTransition
+import com.android.purebilibili.core.ui.transition.videoSharedElementBoundsTransformSpec
 import com.android.purebilibili.core.ui.rememberAppChevronUpIcon
 import com.android.purebilibili.core.ui.rememberAppCollectionIcon
 import com.android.purebilibili.core.ui.rememberAppDownloadIcon
@@ -3335,7 +3336,7 @@ fun VideoDetailScreen(
                                                 easing = homeSharedTransitionMotionSpec.easing
                                             )
                                         } else {
-                                            com.android.purebilibili.core.ui.motion.AppMotionTokens.spatialSpec()
+                                            videoSharedElementBoundsTransformSpec(homeSharedTransitionMotionSpec)
                                         }
                                     },
                                     clipInOverlayDuringTransition = OverlayClip(
@@ -3348,21 +3349,24 @@ fun VideoDetailScreen(
                     }
 
                     val isLeaving = isReturningFromDetail || isExitTransitionInProgress
+                    val returnAlphaDurationMillis = if (homeSharedTransitionMotionSpec.enabled) {
+                        homeSharedTransitionMotionSpec.durationMillis
+                    } else {
+                        0
+                    }
                     val coverCrossfadeAlpha by animateFloatAsState(
                         targetValue = if (isLeaving) 1f else 0f,
                         animationSpec = tween(
-                            durationMillis = 240,
-                            delayMillis = if (isLeaving) 40 else 0,
-                            easing = com.android.purebilibili.core.ui.transition.VIDEO_RETURN_CROSSFADE_EASING
+                            durationMillis = returnAlphaDurationMillis,
+                            easing = homeSharedTransitionMotionSpec.easing
                         ),
                         label = "coverCrossfade"
                     )
                     val playerFadeAlpha by animateFloatAsState(
                         targetValue = if (isLeaving) 0f else 1f,
                         animationSpec = tween(
-                            durationMillis = 200,
-                            delayMillis = if (isLeaving) 20 else 0,
-                            easing = com.android.purebilibili.core.ui.transition.VIDEO_RETURN_FADE_OUT_EASING
+                            durationMillis = returnAlphaDurationMillis,
+                            easing = homeSharedTransitionMotionSpec.easing
                         ),
                         label = "playerFade"
                     )
