@@ -1325,7 +1325,8 @@ internal fun resolveAndroidNativeIdleIndicatorSurfaceColor(
     darkTheme: Boolean
 ): Color {
     return if (darkTheme) {
-        Color.White.copy(alpha = 0.1f)
+        // BiliPai 的组合采样层比 KSU 更亮，降低白色叠层避免深色主题下形成实心灰块。
+        Color.White.copy(alpha = 0.06f)
     } else {
         Color.Black.copy(alpha = 0.1f)
     }
