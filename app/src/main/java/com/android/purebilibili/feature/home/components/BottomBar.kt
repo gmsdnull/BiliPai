@@ -3481,13 +3481,13 @@ private fun KernelSuAlignedBottomBar(
                                     drawRect(ksuContainerColor)
                                 }
                             )
-                            // 对齐 KSU：隐藏采样层保持中性色内容，再由整层 tint 统一染成主题色。
-                            .graphicsLayer(colorFilter = ColorFilter.tint(exportTintColor))
                     ) {
+                        // 图标和文字统一染色，角标单独采样以保留红色。
                         Row(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(horizontal = dockHorizontalPadding),
+                                .padding(horizontal = dockHorizontalPadding)
+                                .graphicsLayer(colorFilter = ColorFilter.tint(exportTintColor)),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             visibleItems.forEachIndexed { index, item ->
@@ -3497,7 +3497,7 @@ private fun KernelSuAlignedBottomBar(
                                     item = item,
                                     itemWidth = indicatorWidth,
                                     label = resolveBottomNavItemLabel(item),
-                                    dynamicUnreadCount = dynamicUnreadCount,
+                                    dynamicUnreadCount = 0,
                                     selected = true,
                                     showIcon = showIcon,
                                     showText = showText,
@@ -3522,7 +3522,7 @@ private fun KernelSuAlignedBottomBar(
                                     item = null,
                                     itemWidth = indicatorWidth,
                                     label = stringResource(R.string.sidebar_toggle),
-                                    dynamicUnreadCount = dynamicUnreadCount,
+                                    dynamicUnreadCount = 0,
                                     selected = true,
                                     showIcon = showIcon,
                                     showText = showText,
@@ -3537,6 +3537,45 @@ private fun KernelSuAlignedBottomBar(
                                     selectedIconAlpha = 1f,
                                     scale = sampledItemScale()
                                 )
+                            }
+                        }
+
+                        if (showIcon && dynamicUnreadCount > 0) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = dockHorizontalPadding),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                visibleItems.forEach { item ->
+                                    Box(
+                                        modifier = Modifier
+                                            .width(indicatorWidth)
+                                            .fillMaxHeight(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        if (item == BottomNavItem.DYNAMIC) {
+                                            BottomBarReminderBadgeAnchor(
+                                                badgeText = formatBottomBarDynamicReminderBadge(
+                                                    dynamicUnreadCount
+                                                ),
+                                                modifier = Modifier.offset(
+                                                    y = if (showText) (-7).dp else 0.dp
+                                                )
+                                            ) {
+                                                Spacer(modifier = Modifier.size(24.dp))
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if (isTablet && onToggleSidebar != null) {
+                                    Spacer(
+                                        modifier = Modifier
+                                            .width(indicatorWidth)
+                                            .fillMaxHeight()
+                                    )
+                                }
                             }
                         }
                     }

@@ -222,8 +222,16 @@ class BottomBarMiuixStructureTest {
             .substringAfter("if (shouldRenderIndicatorContentCapture && miuixBackdrop != null) {")
             .substringBefore("if (searchEnabled) {")
         assertTrue(indicatorCaptureContentSource.contains("scale = sampledItemScale()"))
-        assertTrue(indicatorCaptureContentSource.contains("dynamicUnreadCount = dynamicUnreadCount"))
-        assertFalse(indicatorCaptureContentSource.contains("dynamicUnreadCount = 0"))
+        assertTrue(indicatorCaptureContentSource.contains("dynamicUnreadCount = 0"))
+        assertTrue(indicatorCaptureContentSource.contains("BottomBarReminderBadgeAnchor("))
+        assertTrue(indicatorCaptureContentSource.contains("formatBottomBarDynamicReminderBadge("))
+        assertTrue(indicatorCaptureContentSource.contains("ColorFilter.tint(exportTintColor)"))
+        assertFalse(
+            indicatorCaptureContentSource
+                .substringAfter("BottomBarReminderBadgeAnchor(")
+                .substringBefore("KernelSuMiuixBottomBarIndicatorLayer(")
+                .contains("ColorFilter.tint(exportTintColor)")
+        )
         assertTrue(indicatorCaptureContentSource.contains("selected = true,"))
         assertTrue(indicatorCaptureContentSource.contains("selectedIconAlpha = 1f"))
         assertFalse(indicatorCaptureContentSource.contains("selectedIconAlpha = coverage"))
