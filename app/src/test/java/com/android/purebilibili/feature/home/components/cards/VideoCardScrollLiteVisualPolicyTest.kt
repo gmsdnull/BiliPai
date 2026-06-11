@@ -24,14 +24,14 @@ class VideoCardScrollLiteVisualPolicyTest {
     }
 
     @Test
-    fun `normal mode keeps cover gradient when stats move below cover`() {
+    fun `normal mode removes cover gradient when stats move below cover`() {
         val policy = resolveVideoCardScrollLiteVisualPolicy(
             scrollLiteModeEnabled = false,
             compactStatsOnCover = false
         )
 
         assertEquals(0f, policy.coverShadowElevationDp, 0.0001f)
-        assertTrue(policy.showCoverGradientMask)
+        assertFalse(policy.showCoverGradientMask)
         assertTrue(policy.showHistoryProgressBar)
         assertFalse(policy.showCompactStatsOnCover)
         assertTrue(policy.showSecondaryStatsRow)

@@ -24,8 +24,8 @@ internal fun resolveVideoCardScrollLiteVisualPolicy(
 
     return VideoCardScrollLiteVisualPolicy(
         coverShadowElevationDp = 0f,
-        // 播放量/弹幕贴在封面上时不再铺底部暗渐变，避免统计信息周围出现黑色阴影。
-        showCoverGradientMask = !compactStatsOnCover,
+        // 统计信息移到封面外时也不需要暗渐变；保持静止和滚动状态一致，避免整批封面明暗闪烁。
+        showCoverGradientMask = false,
         showHistoryProgressBar = true,
         showCompactStatsOnCover = compactStatsOnCover,
         showSecondaryStatsRow = !compactStatsOnCover
