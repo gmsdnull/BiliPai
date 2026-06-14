@@ -878,7 +878,12 @@ fun rememberVideoPlayerState(
                 .apply {
                     //  [修复] 确保音量正常，解决第二次播放静音问题
                     //  如果 startPaused 为 true，则静音
-                    volume = if (startPaused) 0f else 1.0f
+                    volume = if (startPaused) {
+                        0f
+                    } else {
+                        com.android.purebilibili.core.player.PlayerVolumeController
+                            .preferredVolumeSync()
+                    }
                     setPlaybackSpeed(preferredPlaybackSpeed)
                     //  [重构] 不在此处调用 prepare()，因为还没有媒体源
                     // prepare() 和 playWhenReady 将在 attachPlayer/loadVideo 设置媒体源后调用
@@ -1041,7 +1046,8 @@ fun rememberVideoPlayerState(
                     )
 
                     if (resumeDecision.shouldRestoreVolume) {
-                        player.volume = 1.0f
+                        com.android.purebilibili.core.player.PlayerVolumeController
+                            .applyPreferredVolume(player)
                         holder.recordDiagnosticEvent("lifecycleResume -> restoreVolume")
                         com.android.purebilibili.core.util.Logger.d(
                             "VideoPlayerState",

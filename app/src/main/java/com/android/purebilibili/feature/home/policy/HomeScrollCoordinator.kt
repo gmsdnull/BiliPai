@@ -2,6 +2,7 @@ package com.android.purebilibili.feature.home.policy
 
 import com.android.purebilibili.feature.home.resolveNextHomeGlobalScrollOffset
 import kotlin.math.abs
+import kotlin.math.round
 
 internal enum class BottomBarVisibilityIntent {
     SHOW,
@@ -18,6 +19,14 @@ internal data class HomeHeaderSettleTransition(
     val targetOffsetPx: Float,
     val shouldAnimate: Boolean
 )
+
+internal fun quantizeHomeHeaderOffset(
+    offsetPx: Float,
+    stepPx: Float
+): Float {
+    if (stepPx <= 0f) return offsetPx
+    return round(offsetPx / stepPx) * stepPx
+}
 
 internal fun shouldHandleHomeVerticalPreScroll(
     deltaX: Float,

@@ -1366,7 +1366,8 @@ class MiniPlayerManager private constructor(private val context: Context) :
                 .apply {
                     addListener(playerListener)
                     //  [修复] 确保音量正常
-                    volume = 1.0f
+                    volume = com.android.purebilibili.core.player.PlayerVolumeController
+                        .preferredVolumeSync()
                     setPlaybackSpeed(SettingsManager.getPreferredPlaybackSpeedSync(context))
                     prepare()
                 }
@@ -1444,7 +1445,9 @@ class MiniPlayerManager private constructor(private val context: Context) :
         }
 
         //  [修复] 确保音量正常
-        _player?.volume = 1.0f
+        _player?.let {
+            com.android.purebilibili.core.player.PlayerVolumeController.applyPreferredVolume(it)
+        }
         _player?.prepare()
         _player?.playWhenReady = true
 

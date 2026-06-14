@@ -376,7 +376,8 @@ fun PortraitVideoPager(
             .build()
             .apply {
                 repeatMode = resolvePortraitPagerRepeatMode()
-                volume = 1.0f
+                volume = com.android.purebilibili.core.player.PlayerVolumeController
+                    .preferredVolumeSync()
                 setPlaybackSpeed(SettingsManager.getPreferredPlaybackSpeedSync(context))
             }
     }

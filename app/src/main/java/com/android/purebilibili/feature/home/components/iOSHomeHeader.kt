@@ -1356,7 +1356,12 @@ internal fun Modifier.homeTopChromeSurface(
         renderMode = renderMode,
         preferFlatGlass = style.preferFlatGlass
     )
-    val scrollOffset = scrollState.floatValue * resolvedTuning.scrollCoupledRefractionAmount
+    // 滑动时冻结折射参数，避免逐帧偏移让整个顶部材质树持续重组。
+    val scrollOffset = if (isScrolling) {
+        0f
+    } else {
+        scrollState.floatValue * resolvedTuning.scrollCoupledRefractionAmount
+    }
     val backdropSpec = resolveHomeTopChromeBackdropSpec(
         tuning = resolvedTuning,
         scrollOffset = scrollOffset,
@@ -1857,9 +1862,16 @@ fun iOSHomeHeader(
         uiPreset = uiPreset
     )
 
-    // [Optimization] Calculate layout values LOCALLY using deferred state read
-    // This prevents HomeScreen from recomposing when headerOffset changes
-    val headerOffset by remember { derivedStateOf(headerOffsetProvider) }
+    val headerOffsetQuantizationPx = with(density) { 4.dp.toPx() }
+    val currentHeaderOffsetProvider by rememberUpdatedState(headerOffsetProvider)
+    val headerOffset by remember(headerOffsetQuantizationPx) {
+        derivedStateOf {
+            com.android.purebilibili.feature.home.policy.quantizeHomeHeaderOffset(
+                offsetPx = currentHeaderOffsetProvider(),
+                stepPx = headerOffsetQuantizationPx
+            )
+        }
+    }
     
     val searchBarHeightDp = resolveHomeTopSearchBarHeight(uiPreset, androidNativeVariant)
     val tabRowHeightDp = resolveHomeTopTabRowHeight(

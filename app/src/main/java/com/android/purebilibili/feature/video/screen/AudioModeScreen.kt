@@ -550,7 +550,8 @@ fun AudioModeScreen(
                                 onSeek = { pos -> 
                                     player.seekTo(pos)
                                     // [修复] 确保 seek 后音量正常
-                                    player.volume = 1.0f
+                                    com.android.purebilibili.core.player.PlayerVolumeController
+                                        .applyPreferredVolume(player)
                                 },
                                 onPrevious = { viewModel.playPreviousAudioModeTrack() },
                                 onNext = { viewModel.playNextAudioModeTrack() },
@@ -1099,7 +1100,8 @@ private fun PlayerControls(
                 val wasPlaying = player.isPlaying || player.playbackState == Player.STATE_BUFFERING
                 onSeek(target)
                 // [修复] 确保 seek 后恢复播放状态和音量
-                player.volume = 1.0f
+                com.android.purebilibili.core.player.PlayerVolumeController
+                    .applyPreferredVolume(player)
                 if (wasPlaying) {
                     player.play()
                 }

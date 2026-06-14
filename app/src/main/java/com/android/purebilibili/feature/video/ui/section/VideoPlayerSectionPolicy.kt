@@ -119,15 +119,50 @@ internal fun resolveVideoPlayerBottomGestureExclusionHeightDp(
 internal fun shouldIgnoreVideoPlayerDragStart(
     offsetY: Float,
     containerHeightPx: Float,
-    edgeSafeZonePx: Float,
+    topGestureExclusionPx: Float,
     bottomGestureExclusionPx: Float
 ): Boolean {
     if (containerHeightPx <= 0f) return false
+    val clampedTopExclusionPx = topGestureExclusionPx.coerceIn(0f, containerHeightPx)
     val clampedBottomExclusionPx = bottomGestureExclusionPx.coerceIn(0f, containerHeightPx)
-    val inEdgeSafeZone = offsetY < edgeSafeZonePx || offsetY > (containerHeightPx - edgeSafeZonePx)
-    val inBottomGestureExclusionZone = clampedBottomExclusionPx > 0f &&
+    return offsetY < clampedTopExclusionPx ||
         offsetY >= (containerHeightPx - clampedBottomExclusionPx)
-    return inEdgeSafeZone || inBottomGestureExclusionZone
+}
+
+internal data class VideoPlayerGestureVerticalExclusions(
+    val topPx: Float,
+    val bottomPx: Float
+)
+
+internal fun resolveVideoPlayerGestureVerticalExclusions(
+    containerHeightPx: Float,
+    isFullscreen: Boolean,
+    controlsVisible: Boolean,
+    requestedBottomControlsExclusionPx: Float,
+    inlineTopExclusionPx: Float,
+    inlineBottomExclusionPx: Float,
+    fullscreenEdgeExclusionPx: Float
+): VideoPlayerGestureVerticalExclusions {
+    if (containerHeightPx <= 0f) {
+        return VideoPlayerGestureVerticalExclusions(0f, 0f)
+    }
+    val requestedTop = if (isFullscreen) fullscreenEdgeExclusionPx else inlineTopExclusionPx
+    val requestedBottom = when {
+        isFullscreen && controlsVisible ->
+            maxOf(fullscreenEdgeExclusionPx, requestedBottomControlsExclusionPx)
+        isFullscreen -> fullscreenEdgeExclusionPx
+        else -> inlineBottomExclusionPx
+    }
+    val maximumCombinedExclusion = containerHeightPx * 0.5f
+    val combined = (requestedTop + requestedBottom).coerceAtLeast(0f)
+    if (combined <= maximumCombinedExclusion || combined <= 0f) {
+        return VideoPlayerGestureVerticalExclusions(requestedTop, requestedBottom)
+    }
+    val scale = maximumCombinedExclusion / combined
+    return VideoPlayerGestureVerticalExclusions(
+        topPx = requestedTop * scale,
+        bottomPx = requestedBottom * scale
+    )
 }
 
 internal fun resolveEffectivePlaybackSpeed(
@@ -333,9 +368,6 @@ internal fun resolveVerticalGestureMode(
     centerSwipeToFullscreenEnabled: Boolean,
     slideVolumeBrightnessEnabled: Boolean = true
 ): VideoGestureMode {
-    if (!isFullscreen && portraitSwipeToFullscreenEnabled && isSwipeUp) {
-        return VideoGestureMode.SwipeToFullscreen
-    }
     if (!slideVolumeBrightnessEnabled && startX < leftZoneEnd) {
         return VideoGestureMode.None
     }
@@ -345,7 +377,10 @@ internal fun resolveVerticalGestureMode(
     return when {
         startX < leftZoneEnd -> VideoGestureMode.Brightness
         startX > rightZoneStart -> VideoGestureMode.Volume
-        else -> if (centerSwipeToFullscreenEnabled) {
+        else -> if (
+            centerSwipeToFullscreenEnabled ||
+            (!isFullscreen && portraitSwipeToFullscreenEnabled && isSwipeUp)
+        ) {
             VideoGestureMode.SwipeToFullscreen
         } else {
             VideoGestureMode.None

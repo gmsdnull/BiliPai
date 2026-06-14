@@ -1790,7 +1790,7 @@ class PlayerViewModel : ViewModel() {
 
         exoPlayer = player
         playbackUseCase.attachPlayer(player)
-        player.volume = 1.0f
+        com.android.purebilibili.core.player.PlayerVolumeController.applyPreferredVolume(player)
         
         // 防止重复添加同一个 listener（同一 player 多次 attach 的场景）
         player.removeListener(playbackEndListener)
@@ -2477,7 +2477,7 @@ class PlayerViewModel : ViewModel() {
             }
             
             //  确保音量正常
-            player.volume = 1.0f
+            com.android.purebilibili.core.player.PlayerVolumeController.applyPreferredVolume(player)
             if (!player.isPlaying) {
                 player.play()
             }
@@ -2693,7 +2693,7 @@ class PlayerViewModel : ViewModel() {
                              // 🎯 Skip preparing player, but ensure it's playing if needed
                              Logger.d("PlayerVM", "🎯 Skipping player preparation (already playing)")
                              exoPlayer?.let { p ->
-                                 p.volume = 1.0f
+                                 com.android.purebilibili.core.player.PlayerVolumeController.applyPreferredVolume(p)
                                  if (!p.isPlaying) p.play()
                              }
                         }

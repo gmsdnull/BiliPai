@@ -272,6 +272,18 @@ internal fun shouldPollInlineVideoOverlayProgress(
     return playerExists && hostLifecycleStarted
 }
 
+internal fun resolveInlineVideoOverlayProgressPollingIntervalMs(
+    controlsVisible: Boolean,
+    isPlaying: Boolean,
+    highFrequencyProgressActive: Boolean
+): Long {
+    return when {
+        highFrequencyProgressActive -> 100L
+        controlsVisible && isPlaying -> 200L
+        else -> 500L
+    }
+}
+
 internal fun resolveOverlayPlaybackButtonPlayingState(
     isPlaying: Boolean,
     playWhenReady: Boolean,
@@ -530,6 +542,7 @@ fun VideoPlayerOverlay(
     onSeekTo: ((Long) -> Unit)? = null,
     progressDisplayOverridePositionMs: Long? = null,
     isPlaybackTransitionPending: Boolean = false,
+    highFrequencyProgressActive: Boolean = false,
     // [New] Codec & Audio Params
     currentCodec: String = "hev1",
     onCodecChange: (String) -> Unit = {},
@@ -882,7 +895,8 @@ fun VideoPlayerOverlay(
         player,
         isVisible,
         hostLifecycleStarted,
-        hasPendingSeekResume
+        hasPendingSeekResume,
+        highFrequencyProgressActive
     ) {
         if (!shouldPollInlineVideoOverlayProgress(
                 playerExists = true,
@@ -924,7 +938,11 @@ fun VideoPlayerOverlay(
                 playbackState = player.playbackState,
                 hasPendingSeekResume = hasPendingSeekResume
             )
-            val delayMs = if (isVisible && player.isPlaying) 200L else 500L
+            val delayMs = resolveInlineVideoOverlayProgressPollingIntervalMs(
+                controlsVisible = isVisible,
+                isPlaying = player.isPlaying,
+                highFrequencyProgressActive = highFrequencyProgressActive
+            )
             delay(delayMs)
         }
     }

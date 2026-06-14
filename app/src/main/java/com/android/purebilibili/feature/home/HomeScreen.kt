@@ -1209,7 +1209,7 @@ fun HomeScreen(
     }
     
     // 顶部搜索行与标签页分别由设置控制，避免一个开关隐式改变另一块区域。
-    val areTopTabsAutoCollapsed by remember(headerOffsetHeightPx, collapseTabsOnScroll) {
+    val areTopTabsAutoCollapsed by remember(collapseTabsOnScroll) {
         derivedStateOf {
             resolveHomeTopTabsAutoCollapsed(
                 currentHeaderOffsetPx = headerOffsetHeightPx,
@@ -2180,25 +2180,6 @@ fun HomeScreen(
                 consentDialogHandled = true  // 标记为已处理
             }
         )
-    }
-    
-    //  计算滚动偏移量用于头部动画 -  优化：量化减少重组
-    //  计算滚动偏移量用于头部动画 -  优化：量化减少重组
-    val scrollOffset by remember {
-        derivedStateOf {
-            val currentGridState = if (currentCategory == HomeCategory.POPULAR) {
-                popularGridStates[popularSubCategory]
-            } else {
-                gridStates[currentCategory]
-            }
-            if (currentGridState == null) return@derivedStateOf 0f
-            
-            val firstVisibleItem = currentGridState.firstVisibleItemIndex
-            if (firstVisibleItem == 0) {
-                //  直接使用原始偏移量，避免量化导致的跳变
-                currentGridState.firstVisibleItemScrollOffset.toFloat()
-            } else 1000f
-        }
     }
     
     //  滚动方向（简化版 - 不再需要复杂检测，因为标签页只在顶部显示）

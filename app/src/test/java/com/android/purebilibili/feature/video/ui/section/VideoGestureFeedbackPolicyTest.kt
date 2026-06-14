@@ -140,6 +140,34 @@ class VideoGestureFeedbackPolicyTest {
     }
 
     @Test
+    fun `resolveVerticalGestureMode keeps edge volume brightness ahead of portrait fullscreen`() {
+        assertEquals(
+            VideoGestureMode.Brightness,
+            resolveVerticalGestureMode(
+                isFullscreen = false,
+                isSwipeUp = true,
+                startX = 120f,
+                leftZoneEnd = 300f,
+                rightZoneStart = 700f,
+                portraitSwipeToFullscreenEnabled = true,
+                centerSwipeToFullscreenEnabled = false
+            )
+        )
+        assertEquals(
+            VideoGestureMode.Volume,
+            resolveVerticalGestureMode(
+                isFullscreen = false,
+                isSwipeUp = true,
+                startX = 920f,
+                leftZoneEnd = 300f,
+                rightZoneStart = 700f,
+                portraitSwipeToFullscreenEnabled = true,
+                centerSwipeToFullscreenEnabled = false
+            )
+        )
+    }
+
+    @Test
     fun `resolveVerticalGestureMode uses center setting in fullscreen independently`() {
         assertEquals(
             VideoGestureMode.SwipeToFullscreen,

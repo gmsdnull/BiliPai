@@ -7,6 +7,13 @@ import kotlin.test.assertNull
 class HomeScrollCoordinatorTest {
 
     @Test
+    fun headerOffset_isQuantizedInsteadOfChangingEveryPixel() {
+        assertEquals(0f, quantizeHomeHeaderOffset(offsetPx = 1f, stepPx = 4f))
+        assertEquals(4f, quantizeHomeHeaderOffset(offsetPx = 3f, stepPx = 4f))
+        assertEquals(-8f, quantizeHomeHeaderOffset(offsetPx = -7f, stepPx = 4f))
+    }
+
+    @Test
     fun collapsedHeaderWithoutMotion_doesNotCountAsHeaderTransition() {
         assertEquals(
             false,

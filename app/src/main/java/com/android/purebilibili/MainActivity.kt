@@ -1873,7 +1873,8 @@ open class MainActivity : AppCompatActivity() {
             miniPlayerManager.resetNavigationFlag()
             miniPlayerManager.player?.let { player ->
                 if (shouldRestoreMutedPlaybackPlayerVolumeOnResume(player.volume)) {
-                    player.volume = 1.0f
+                    com.android.purebilibili.core.player.PlayerVolumeController
+                        .applyPreferredVolume(player)
                 }
             }
         }

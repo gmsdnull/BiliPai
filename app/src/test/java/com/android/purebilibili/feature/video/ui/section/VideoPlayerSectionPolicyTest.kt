@@ -16,7 +16,7 @@ class VideoPlayerSectionPolicyTest {
             shouldIgnoreVideoPlayerDragStart(
                 offsetY = 940f,
                 containerHeightPx = 1_000f,
-                edgeSafeZonePx = 48f,
+                topGestureExclusionPx = 48f,
                 bottomGestureExclusionPx = 120f
             )
         )
@@ -28,7 +28,7 @@ class VideoPlayerSectionPolicyTest {
             shouldIgnoreVideoPlayerDragStart(
                 offsetY = 700f,
                 containerHeightPx = 1_000f,
-                edgeSafeZonePx = 48f,
+                topGestureExclusionPx = 48f,
                 bottomGestureExclusionPx = 120f
             )
         )
@@ -62,7 +62,7 @@ class VideoPlayerSectionPolicyTest {
             shouldIgnoreVideoPlayerDragStart(
                 offsetY = 210f,
                 containerHeightPx = 360f,
-                edgeSafeZonePx = 48f,
+                topGestureExclusionPx = 48f,
                 bottomGestureExclusionPx = visibleControlExclusionPx
             )
         )
@@ -85,10 +85,26 @@ class VideoPlayerSectionPolicyTest {
             shouldIgnoreVideoPlayerDragStart(
                 offsetY = 830f,
                 containerHeightPx = 1_000f,
-                edgeSafeZonePx = 48f,
+                topGestureExclusionPx = 48f,
                 bottomGestureExclusionPx = 186f
             )
         )
+    }
+
+    @Test
+    fun inlineGestureExclusions_keepHalfOfShortPlayerInteractive() {
+        val exclusions = resolveVideoPlayerGestureVerticalExclusions(
+            containerHeightPx = 120f,
+            isFullscreen = false,
+            controlsVisible = true,
+            requestedBottomControlsExclusionPx = 100f,
+            inlineTopExclusionPx = 24f,
+            inlineBottomExclusionPx = 48f,
+            fullscreenEdgeExclusionPx = 48f
+        )
+
+        assertEquals(20f, exclusions.topPx, 0.001f)
+        assertEquals(40f, exclusions.bottomPx, 0.001f)
     }
 
     @Test

@@ -1848,6 +1848,16 @@ object SettingsManager {
         return PlayerSettingsStore.getPreferredPlaybackSpeedSync(context)
     }
 
+    fun getPreferredPlayerVolume(context: Context): Flow<Float> =
+        PlayerSettingsStore.getPreferredPlayerVolume(context)
+
+    suspend fun setPreferredPlayerVolume(context: Context, volume: Float) {
+        PlayerSettingsStore.setPreferredPlayerVolume(context, volume)
+    }
+
+    fun getPreferredPlayerVolumeSync(context: Context): Float =
+        PlayerSettingsStore.getPreferredPlayerVolumeSync(context)
+
     //  [新增] --- 主题色索引 (默认 0 = 经典蓝) ---
     fun getThemeColorIndex(context: Context): Flow<Int> = context.settingsDataStore.data
         .map { preferences -> normalizeThemeColorIndex(preferences[KEY_THEME_COLOR_INDEX] ?: 0) }

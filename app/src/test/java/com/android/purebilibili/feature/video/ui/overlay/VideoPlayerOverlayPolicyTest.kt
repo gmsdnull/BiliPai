@@ -17,6 +17,26 @@ import androidx.compose.ui.graphics.luminance
 class VideoPlayerOverlayPolicyTest {
 
     @Test
+    fun `long press speed keeps shared progress snapshot at high frequency`() {
+        assertEquals(
+            100L,
+            resolveInlineVideoOverlayProgressPollingIntervalMs(
+                controlsVisible = false,
+                isPlaying = true,
+                highFrequencyProgressActive = true
+            )
+        )
+        assertEquals(
+            500L,
+            resolveInlineVideoOverlayProgressPollingIntervalMs(
+                controlsVisible = false,
+                isPlaying = true,
+                highFrequencyProgressActive = false
+            )
+        )
+    }
+
+    @Test
     fun sponsorProgressBarMarkers_areClampedIntoTrackBounds() {
         val markers = resolveSponsorProgressBarMarkers(
             durationMs = 100_000L,

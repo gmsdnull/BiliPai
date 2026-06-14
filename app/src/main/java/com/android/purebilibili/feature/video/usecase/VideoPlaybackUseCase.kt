@@ -359,7 +359,7 @@ class VideoPlaybackUseCase(
      */
     fun attachPlayer(player: ExoPlayer) {
         exoPlayer = player
-        player.volume = 1.0f
+        com.android.purebilibili.core.player.PlayerVolumeController.applyPreferredVolume(player)
     }
     
     /**
@@ -733,7 +733,7 @@ class VideoPlaybackUseCase(
         playWhenReady: Boolean = true
     ) {
         val player = exoPlayer ?: return
-        player.volume = 1.0f
+        com.android.purebilibili.core.player.PlayerVolumeController.applyPreferredVolume(player)
 
         val finalSource = if (shouldUseAdaptiveDashPlayback(adaptiveDashSource, audioUrl)) {
             createAdaptiveDashMediaSource(adaptiveDashSource)
@@ -761,7 +761,7 @@ class VideoPlaybackUseCase(
      */
     fun playVideo(url: String, seekTo: Long = 0L, playWhenReady: Boolean = true) {
         val player = exoPlayer ?: return
-        player.volume = 1.0f
+        com.android.purebilibili.core.player.PlayerVolumeController.applyPreferredVolume(player)
         
         val mediaItem = MediaItem.fromUri(url)
         player.setMediaItem(mediaItem)

@@ -2638,7 +2638,8 @@ fun VideoDetailScreen(
         } else {
              if (shouldPauseMainPlayer) {
                  // 退出时恢复音量 (不自动播放，等待用户操作或 onResume)
-                 playerState.player.volume = 1f
+                 com.android.purebilibili.core.player.PlayerVolumeController
+                     .applyPreferredVolume(playerState.player)
              }
             if (!com.android.purebilibili.feature.video.ui.pager
                     .shouldApplyDeferredPortraitRestoreOnResume(

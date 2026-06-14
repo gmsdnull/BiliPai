@@ -41,7 +41,7 @@ abstract class BasePlayerViewModel : ViewModel() {
      */
     open fun attachPlayer(player: ExoPlayer) {
         this.exoPlayer = player
-        player.volume = 1.0f
+        PlayerVolumeController.applyPreferredVolume(player)
     }
     
     /**
@@ -197,7 +197,7 @@ abstract class BasePlayerViewModel : ViewModel() {
         }
         Logger.d(TAG, "▶️ playDashVideo: referer=$referer, seekTo=${seekToMs}ms, reset=$resetPlayer, video=${videoUrl.take(50)}...")
         
-        player.volume = 1.0f
+        PlayerVolumeController.applyPreferredVolume(player)
         
         val mediaSourceFactory = buildProgressiveMediaSourceFactory(referer)
         
@@ -245,7 +245,7 @@ abstract class BasePlayerViewModel : ViewModel() {
             return
         }
 
-        player.volume = 1.0f
+        PlayerVolumeController.applyPreferredVolume(player)
         val mediaSourceFactory = buildProgressiveMediaSourceFactory(referer)
         val concatenated = ConcatenatingMediaSource().apply {
             cleanUrls.forEach { url ->
@@ -290,7 +290,7 @@ abstract class BasePlayerViewModel : ViewModel() {
         val player = exoPlayer ?: return
         Logger.d(TAG, " playVideo: seekTo=${seekToMs}ms, url=${url.take(50)}...")
         
-        player.volume = 1.0f
+        PlayerVolumeController.applyPreferredVolume(player)
         
         val mediaSource = buildProgressiveMediaSourceFactory("https://www.bilibili.com")
             .createMediaSource(MediaItem.fromUri(url))

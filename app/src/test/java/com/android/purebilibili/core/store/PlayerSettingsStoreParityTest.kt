@@ -33,4 +33,12 @@ class PlayerSettingsStoreParityTest {
             PlayerSettingsStore.normalizePlaybackSpeed(9.5f)
         )
     }
+
+    @Test
+    fun `player volume is normalized to two percent steps`() {
+        assertEquals(0f, PlayerSettingsStore.normalizePlayerVolume(-0.2f))
+        assertEquals(0.02f, PlayerSettingsStore.normalizePlayerVolume(0.011f))
+        assertEquals(0.48f, PlayerSettingsStore.normalizePlayerVolume(0.489f))
+        assertEquals(1f, PlayerSettingsStore.normalizePlayerVolume(1.2f))
+    }
 }

@@ -15,10 +15,21 @@ object PlayerSettingsStore {
     private val keyDefaultPlaybackSpeed = floatPreferencesKey("default_playback_speed")
     private val keyRememberLastPlaybackSpeed = booleanPreferencesKey("remember_last_playback_speed")
     private val keyLastPlaybackSpeed = floatPreferencesKey("last_playback_speed")
+    private val keyPreferredPlayerVolume = floatPreferencesKey("preferred_player_volume")
     private const val playbackSpeedCachePrefs = "playback_speed_cache"
     private const val cacheKeyDefaultPlaybackSpeed = "default_speed"
     private const val cacheKeyRememberLastSpeed = "remember_last_speed"
     private const val cacheKeyLastPlaybackSpeed = "last_speed"
+    private const val cacheKeyPreferredPlayerVolume = "preferred_player_volume"
+
+    const val PLAYER_VOLUME_STEP = 0.02f
+
+    fun normalizePlayerVolume(volume: Float): Float {
+        val stepCount = (volume.coerceIn(0f, 1f) / PLAYER_VOLUME_STEP).toInt()
+        val lower = stepCount * PLAYER_VOLUME_STEP
+        val upper = ((stepCount + 1) * PLAYER_VOLUME_STEP).coerceAtMost(1f)
+        return if (volume - lower < upper - volume) lower else upper
+    }
 
     fun normalizePlaybackSpeed(speed: Float): Float {
         return normalizePlaybackSpeedPolicy(speed)
@@ -98,6 +109,29 @@ object PlayerSettingsStore {
             defaultSpeed = defaultSpeed,
             rememberLastSpeed = rememberLast,
             lastSpeed = lastSpeed
+        )
+    }
+
+    fun getPreferredPlayerVolume(context: Context): Flow<Float> = context.settingsDataStore.data
+        .map { preferences ->
+            normalizePlayerVolume(preferences[keyPreferredPlayerVolume] ?: 1.0f)
+        }
+
+    suspend fun setPreferredPlayerVolume(context: Context, volume: Float) {
+        val normalized = normalizePlayerVolume(volume)
+        context.settingsDataStore.edit { preferences ->
+            preferences[keyPreferredPlayerVolume] = normalized
+        }
+        context.getSharedPreferences(playbackSpeedCachePrefs, Context.MODE_PRIVATE)
+            .edit()
+            .putFloat(cacheKeyPreferredPlayerVolume, normalized)
+            .apply()
+    }
+
+    fun getPreferredPlayerVolumeSync(context: Context): Float {
+        return normalizePlayerVolume(
+            context.getSharedPreferences(playbackSpeedCachePrefs, Context.MODE_PRIVATE)
+                .getFloat(cacheKeyPreferredPlayerVolume, 1.0f)
         )
     }
 }
