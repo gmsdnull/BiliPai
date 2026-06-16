@@ -187,6 +187,7 @@ data class VideoItem(
     val aid: Long = 0,   // [修复] 新增 aid 字段，移动端推荐流可能只返回 aid
     val cid: Long = 0,   //  明确的 CID 字段，用于播放
     val title: String = "",
+    val searchHighlightedTitle: String = "",
     val pic: String = "",
     val owner: Owner = Owner(),
     val stat: Stat = Stat(),

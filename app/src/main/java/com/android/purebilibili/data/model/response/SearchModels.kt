@@ -160,6 +160,7 @@ data class SearchVideoItem(
                 .replace("&amp;", "&")        // 修复 & 符号转义
                 .replace("&lt;", "<")         // 修复 < 符号
                 .replace("&gt;", ">"),        // 修复 > 符号
+            searchHighlightedTitle = title,
 
             pic = if (pic.startsWith("//")) "https:$pic" else pic,
             owner = Owner(mid = mid, name = author),

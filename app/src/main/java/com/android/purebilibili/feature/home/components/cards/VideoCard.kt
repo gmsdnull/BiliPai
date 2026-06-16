@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
@@ -329,6 +330,7 @@ fun ElegantVideoCard(
     homeDurationStyle: HomeDurationStyle = HomeDurationStyle.OUTSIDE_COVER,
     coverAspectRatio: Float = 4f / 3f,
     compactMetadata: Boolean = true,
+    highlightedTitle: AnnotatedString? = null,
     showOnlineCount: Boolean = false,
     upFollowerCount: Int? = null,
     upVideoCount: Int? = null,
@@ -990,7 +992,7 @@ fun ElegantVideoCard(
             }
 
             Text(
-                text = video.title,
+                text = highlightedTitle ?: AnnotatedString(video.title),
                 maxLines = 2,
                 minLines = 2,
                 overflow = TextOverflow.Ellipsis,

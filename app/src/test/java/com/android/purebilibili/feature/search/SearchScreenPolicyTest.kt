@@ -232,6 +232,18 @@ class SearchScreenPolicyTest {
     }
 
     @Test
+    fun searchHighlightedTextSegments_preserveEmphasisAndDecodeEntities() {
+        assertEquals(
+            listOf(
+                SearchHighlightedTextSegment("这是", highlighted = false),
+                SearchHighlightedTextSegment("关键词", highlighted = true),
+                SearchHighlightedTextSegment("&结尾", highlighted = false)
+            ),
+            resolveSearchHighlightedTextSegments("这是<em class=\"keyword\">关键词</em>&amp;结尾")
+        )
+    }
+
+    @Test
     fun searchTypeTabs_useCompactDensityOnNarrowScreens() {
         val compact = resolveSearchTypeTabLayoutSpec(widthDp = 360)
         val regular = resolveSearchTypeTabLayoutSpec(widthDp = 412)
@@ -315,6 +327,7 @@ class SearchScreenPolicyTest {
         assertTrue(filterBarBeforePager > 0)
         assertFalse(resultPagerBody.contains("SearchFilterBar("))
         assertFalse(searchSource.contains("detectHorizontalDragGestures"))
+        assertTrue(searchSource.contains("currentPageOffsetFraction"))
     }
 
     @Test

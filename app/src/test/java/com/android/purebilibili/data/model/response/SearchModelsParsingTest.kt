@@ -88,6 +88,22 @@ class SearchModelsParsingTest {
     }
 
     @Test
+    fun searchVideoItem_preservesHighlightedTitleForUi() {
+        val item = SearchVideoItem(
+            id = 1L,
+            bvid = "BV1",
+            title = "这是<em class=\"keyword\">关键词</em>视频",
+            pic = "",
+            author = "tester"
+        )
+
+        val video = item.toVideoItem()
+
+        assertEquals("这是关键词视频", video.title)
+        assertEquals("这是<em class=\"keyword\">关键词</em>视频", video.searchHighlightedTitle)
+    }
+
+    @Test
     fun decodeSearchResponse_preservesClassroomNavigationFields() {
         val payload = """
             {

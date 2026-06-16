@@ -24,6 +24,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
@@ -66,8 +67,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -403,6 +407,46 @@ internal fun resolveSearchResultLazyItemKey(
         secondaryNumericKey > 0L -> "${searchType.value}:$index:secondary:$secondaryNumericKey"
         else -> "${searchType.value}:local:$index"
     }
+}
+
+internal data class SearchHighlightedTextSegment(
+    val text: String,
+    val highlighted: Boolean
+)
+
+internal fun resolveSearchHighlightedTextSegments(rawTitle: String): List<SearchHighlightedTextSegment> {
+    if (rawTitle.isBlank()) return emptyList()
+    val segments = mutableListOf<SearchHighlightedTextSegment>()
+    val regex = Regex("<em[^>]*>(.*?)</em>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
+    var cursor = 0
+    regex.findAll(rawTitle).forEach { match ->
+        if (match.range.first > cursor) {
+            val plain = decodeSearchHighlightedText(rawTitle.substring(cursor, match.range.first))
+            if (plain.isNotEmpty()) {
+                segments += SearchHighlightedTextSegment(plain, highlighted = false)
+            }
+        }
+        val highlighted = decodeSearchHighlightedText(match.groupValues.getOrElse(1) { "" })
+        if (highlighted.isNotEmpty()) {
+            segments += SearchHighlightedTextSegment(highlighted, highlighted = true)
+        }
+        cursor = match.range.last + 1
+    }
+    if (cursor < rawTitle.length) {
+        val plain = decodeSearchHighlightedText(rawTitle.substring(cursor))
+        if (plain.isNotEmpty()) {
+            segments += SearchHighlightedTextSegment(plain, highlighted = false)
+        }
+    }
+    return segments
+}
+
+private fun decodeSearchHighlightedText(raw: String): String {
+    return raw.replace(Regex("<.*?>"), "")
+        .replace("&quot;", "\"")
+        .replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
 }
 
 internal data class SearchTypeTabLayoutSpec(
@@ -755,7 +799,7 @@ fun SearchScreen(
                             }
                             SearchResultTypeTabRow(
                                 tabs = searchTabs,
-                                selectedPage = searchPagerState.currentPage,
+                                pagerState = searchPagerState,
                                 onTabClick = { page, type ->
                                     if (searchPagerState.currentPage == page && state.searchType == type) {
                                         scrollToTopSearchType = type
@@ -865,6 +909,7 @@ fun SearchScreen(
                                         )
                                     }
                                 ) { index, video ->
+                                        val highlightedTitle = rememberSearchHighlightedTitle(video)
                                         ElegantVideoCard(
                                             video = video,
                                             index = index,
@@ -878,6 +923,7 @@ fun SearchScreen(
                                             showInfoGlassBadges = videoCardAppearance.showInfoGlassBadges,
                                             coverAspectRatio = cardLayout.coverAspectRatio,
                                             compactMetadata = cardLayout.compactMetadata,
+                                            highlightedTitle = highlightedTitle,
                                             showOnlineCount = showOnlineCount,
                                             modifier = Modifier,
                                             //  [交互优化] 传递 onWatchLater 用于显示菜单选项
@@ -2109,54 +2155,102 @@ fun SearchHistorySection(
 @Composable
 private fun SearchResultTypeTabRow(
     tabs: List<SearchType>,
-    selectedPage: Int,
+    pagerState: PagerState,
     onTabClick: (Int, SearchType) -> Unit
 ) {
-    Row(
+    val selectedPage = pagerState.currentPage.coerceIn(tabs.indices)
+    ScrollableTabRow(
+        selectedTabIndex = selectedPage,
         modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .fillMaxWidth(),
+        edgePadding = 8.dp,
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        divider = {},
+        indicator = { tabPositions ->
+            SearchPagerTabIndicator(
+                tabPositions = tabPositions,
+                pagerState = pagerState
+            )
+        }
     ) {
         tabs.forEachIndexed { index, type ->
             val selected = selectedPage == index
-            val interactionSource = remember { MutableInteractionSource() }
-            Box(
-                modifier = Modifier
-                    .heightIn(min = 40.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(
-                        if (selected) {
-                            MaterialTheme.colorScheme.secondaryContainer
-                        } else {
-                            Color.Transparent
-                        }
-                    )
-                    .clickable(
-                        interactionSource = interactionSource,
-                        indication = null
-                    ) {
-                        onTabClick(index, type)
-                    }
-                    .padding(horizontal = 16.dp),
-                contentAlignment = Alignment.Center
+            Tab(
+                selected = selected,
+                onClick = { onTabClick(index, type) },
+                interactionSource = remember { MutableInteractionSource() },
+                selectedContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                unselectedContentColor = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.height(44.dp)
             ) {
                 Text(
                     text = type.displayName,
                     fontSize = 13.sp,
                     fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                    color = if (selected) {
-                        MaterialTheme.colorScheme.onSecondaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.outline
-                    },
+                    color = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.outline,
                     maxLines = 1
                 )
             }
         }
     }
+}
+
+@Composable
+private fun rememberSearchHighlightedTitle(video: VideoItem): androidx.compose.ui.text.AnnotatedString? {
+    val highlightColor = MaterialTheme.colorScheme.primary
+    return remember(video.searchHighlightedTitle, highlightColor) {
+        val segments = resolveSearchHighlightedTextSegments(video.searchHighlightedTitle)
+        if (segments.none { it.highlighted }) {
+            null
+        } else {
+            buildAnnotatedString {
+                segments.forEach { segment ->
+                    if (segment.highlighted) {
+                        pushStyle(
+                            SpanStyle(
+                                color = highlightColor,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        )
+                        append(segment.text)
+                        pop()
+                    } else {
+                        append(segment.text)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchPagerTabIndicator(
+    tabPositions: List<TabPosition>,
+    pagerState: PagerState
+) {
+    if (tabPositions.isEmpty()) return
+    val currentPage = pagerState.currentPage.coerceIn(tabPositions.indices)
+    val offsetFraction = pagerState.currentPageOffsetFraction
+    val targetPage = (currentPage + offsetFraction.compareTo(0f))
+        .coerceIn(tabPositions.indices)
+    val progress = kotlin.math.abs(offsetFraction).coerceIn(0f, 1f)
+    val current = tabPositions[currentPage]
+    val target = tabPositions[targetPage]
+    val indicatorLeft = current.left + (target.left - current.left) * progress
+    val indicatorWidth = current.width + (target.width - current.width) * progress
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentSize(Alignment.BottomStart)
+            .offset(x = indicatorLeft)
+            .width(indicatorWidth)
+            .padding(horizontal = 3.dp, vertical = 6.dp)
+            .height(32.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.secondaryContainer)
+    )
 }
 
 /**
