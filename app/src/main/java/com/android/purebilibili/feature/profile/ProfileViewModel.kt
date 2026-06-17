@@ -19,6 +19,8 @@ import com.android.purebilibili.feature.dynamic.DynamicDeleteAction
 import com.android.purebilibili.feature.bangumi.MY_FOLLOW_TYPE_BANGUMI
 import com.android.purebilibili.feature.home.UserState
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -267,11 +269,52 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
 
     private suspend fun loadProfileFavoriteFolders(generation: Long, mid: Long) {
         val folders = FavoriteRepository.getFavFolders(mid).getOrNull() ?: return
+        var mergedFolders = emptyList<FavFolder>()
         updateProfileSuccess(generation, mid) { current ->
             val nextSpace = mergeProfileFavoriteFolderState(current.space, folders)
+            mergedFolders = nextSpace.favoriteFolders
             current.copy(
                 favoriteFolders = nextSpace.favoriteFolders,
                 space = nextSpace
+            )
+        }
+        loadProfileFavoritePreviewCovers(generation, mid, mergedFolders)
+    }
+
+    private suspend fun loadProfileFavoritePreviewCovers(
+        generation: Long,
+        mid: Long,
+        folders: List<FavFolder>
+    ) {
+        val targets = resolveProfileFavoritePreviewCoverTargets(folders)
+        if (targets.isEmpty()) return
+
+        val coversByMediaId = supervisorScope {
+            targets.map { target ->
+                async {
+                    val cover = FavoriteRepository.getFavoriteList(
+                        mediaId = target.mediaId,
+                        pn = 1
+                    ).getOrNull()
+                        ?.medias
+                        ?.firstOrNull { it.cover.isNotBlank() }
+                        ?.cover
+                        .orEmpty()
+                    target.mediaId to cover
+                }
+            }.awaitAll()
+        }.filter { (_, cover) -> cover.isNotBlank() }
+            .toMap()
+        if (coversByMediaId.isEmpty()) return
+
+        updateProfileSuccess(generation, mid) { current ->
+            val updatedFolders = mergeProfileFavoritePreviewCovers(
+                folders = current.space.favoriteFolders,
+                coversByMediaId = coversByMediaId
+            )
+            current.copy(
+                favoriteFolders = updatedFolders,
+                space = current.space.copy(favoriteFolders = updatedFolders)
             )
         }
     }

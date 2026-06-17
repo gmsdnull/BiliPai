@@ -11,6 +11,7 @@ import com.android.purebilibili.data.model.response.SpaceDynamicRichText
 import com.android.purebilibili.data.model.response.SpaceVideoItem
 import com.android.purebilibili.feature.dynamic.DynamicDeleteAction
 import com.android.purebilibili.feature.home.UserState
+import com.android.purebilibili.feature.list.resolveFavoriteFolderMediaId
 
 enum class ProfileSpaceMainTab(val title: String) {
     HOME("主页"),
@@ -51,6 +52,11 @@ data class ProfileSpaceUiState(
     val message: String? = null,
     val signSaveMessage: String? = null,
     val isSavingSign: Boolean = false
+)
+
+data class ProfileFavoritePreviewCoverTarget(
+    val mediaId: Long,
+    val folderId: Long
 )
 
 data class ProfileEditableAccountState(
@@ -196,6 +202,41 @@ internal fun mergeProfileFavoriteFolderState(
         favoriteFolders = merged,
         favoriteFolderCount = maxOf(current.favoriteFolderCount, folders.size)
     )
+}
+
+internal fun resolveProfileFavoritePreviewCoverTargets(
+    folders: List<FavFolder>,
+    maxVisibleFolders: Int = 6
+): List<ProfileFavoritePreviewCoverTarget> {
+    return folders.asSequence()
+        .take(maxVisibleFolders)
+        .filter { folder -> folder.cover.isBlank() && folder.media_count > 0 }
+        .mapNotNull { folder ->
+            val mediaId = resolveFavoriteFolderMediaId(folder)
+            mediaId.takeIf { it > 0L }?.let {
+                ProfileFavoritePreviewCoverTarget(
+                    mediaId = mediaId,
+                    folderId = folder.id
+                )
+            }
+        }
+        .toList()
+}
+
+internal fun mergeProfileFavoritePreviewCovers(
+    folders: List<FavFolder>,
+    coversByMediaId: Map<Long, String>
+): List<FavFolder> {
+    if (folders.isEmpty() || coversByMediaId.isEmpty()) return folders
+    return folders.map { folder ->
+        if (folder.cover.isNotBlank()) {
+            folder
+        } else {
+            val mediaId = resolveFavoriteFolderMediaId(folder)
+            val cover = coversByMediaId[mediaId]?.trim().orEmpty()
+            if (cover.isBlank()) folder else folder.copy(cover = cover)
+        }
+    }
 }
 
 internal fun mergeProfileBangumiState(

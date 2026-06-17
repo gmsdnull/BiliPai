@@ -237,6 +237,44 @@ class ProfileSpacePolicyTest {
     }
 
     @Test
+    fun `favorite preview cover targets only visible empty covered folders`() {
+        val folders = listOf(
+            FavFolder(id = 1, title = "已有封面", cover = "https://i0.hdslb.com/cover.jpg", media_count = 3),
+            FavFolder(id = 2, title = "空收藏夹", cover = "", media_count = 0),
+            FavFolder(id = 3, title = "需要封面", cover = "", media_count = 2),
+            FavFolder(id = 4, title = "也需要封面", cover = " ", media_count = 1),
+            FavFolder(id = 5, title = "第 5 个", cover = "", media_count = 1),
+            FavFolder(id = 6, title = "第 6 个", cover = "", media_count = 1),
+            FavFolder(id = 7, title = "第 7 个", cover = "", media_count = 1),
+            FavFolder(id = 8, title = "第 8 个", cover = "", media_count = 1)
+        )
+
+        assertEquals(
+            listOf(3L, 4L, 5L, 6L),
+            resolveProfileFavoritePreviewCoverTargets(folders).map { it.mediaId }
+        )
+    }
+
+    @Test
+    fun `favorite preview covers fill only blank folder covers`() {
+        val folders = listOf(
+            FavFolder(id = 1, title = "已有封面", cover = "https://i0.hdslb.com/existing.jpg", media_count = 3),
+            FavFolder(id = 2, title = "需要封面", cover = "", media_count = 2)
+        )
+
+        val merged = mergeProfileFavoritePreviewCovers(
+            folders = folders,
+            coversByMediaId = mapOf(
+                1L to "https://i0.hdslb.com/new.jpg",
+                2L to "https://i0.hdslb.com/fallback.jpg"
+            )
+        )
+
+        assertEquals("https://i0.hdslb.com/existing.jpg", merged[0].cover)
+        assertEquals("https://i0.hdslb.com/fallback.jpg", merged[1].cover)
+    }
+
+    @Test
     fun `profile load generation rejects response from previous account`() {
         assertFalse(
             shouldApplyProfileLoadResult(
