@@ -74,6 +74,16 @@ internal fun resolveHomeCategoryVideoGridKey(
     return "home_video_${primaryId}_$index"
 }
 
+internal fun resolveHomeHeroCarouselDedupKey(video: VideoItem): String {
+    return when {
+        video.bvid.isNotBlank() -> "bvid_${video.bvid}"
+        video.id > 0L -> "id_${video.id}"
+        video.aid > 0L -> "aid_${video.aid}"
+        video.cid > 0L -> "cid_${video.cid}"
+        else -> "fallback_${video.owner.mid}_${video.title.hashCode()}_${video.pubdate}"
+    }
+}
+
 internal fun shouldRequestHomeCategoryLoadMore(
     totalItems: Int,
     lastVisibleItemIndex: Int,
@@ -285,14 +295,28 @@ internal fun HomeCategoryPageContent(
             }
         } else {
             // Video Category Content
+            val carouselVideos = if (category == HomeCategory.RECOMMEND) {
+                selectHomeHeroCarouselItems(categoryState.videos)
+            } else {
+                emptyList()
+            }
+            val showHeroCarousel = shouldShowHomeHeroCarousel(
+                enabled = homeHeroCarouselEnabled,
+                category = category,
+                itemCount = carouselVideos.size
+            )
+            val visibleGridVideos = if (showHeroCarousel) {
+                excludeHomeHeroCarouselItems(
+                    items = categoryState.videos,
+                    carouselItems = carouselVideos,
+                    keySelector = ::resolveHomeHeroCarouselDedupKey
+                )
+            } else {
+                categoryState.videos
+            }
+
             if (category == HomeCategory.RECOMMEND) {
-                val carouselVideos = selectHomeHeroCarouselItems(categoryState.videos)
-                if (shouldShowHomeHeroCarousel(
-                        enabled = homeHeroCarouselEnabled,
-                        category = category,
-                        itemCount = carouselVideos.size
-                    )
-                ) {
+                if (showHeroCarousel) {
                     item(
                         key = "home_hero_carousel",
                         contentType = "home_hero_carousel",
@@ -348,14 +372,14 @@ internal fun HomeCategoryPageContent(
                 }
             }
 
-            if (categoryState.videos.isNotEmpty()) {
+            if (visibleGridVideos.isNotEmpty()) {
                 val shouldShowOldContentDivider = category == HomeCategory.RECOMMEND &&
                     (
-                        (oldContentAnchorBvid != null && categoryState.videos.any { it.bvid == oldContentAnchorBvid }) ||
-                            (oldContentStartIndex != null && oldContentStartIndex > 0 && oldContentStartIndex < categoryState.videos.size)
+                        (oldContentAnchorBvid != null && visibleGridVideos.any { it.bvid == oldContentAnchorBvid }) ||
+                            (oldContentStartIndex != null && oldContentStartIndex > 0 && oldContentStartIndex < visibleGridVideos.size)
                         )
 
-                categoryState.videos.forEachIndexed { index, video ->
+                visibleGridVideos.forEachIndexed { index, video ->
                     val shouldInsertDividerHere = shouldShowOldContentDivider && (
                         (oldContentAnchorBvid != null && video.bvid == oldContentAnchorBvid && index > 0) ||
                             (oldContentAnchorBvid == null && index == oldContentStartIndex)

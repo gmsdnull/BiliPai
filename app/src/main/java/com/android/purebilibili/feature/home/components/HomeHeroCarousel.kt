@@ -59,6 +59,7 @@ import coil.request.ImageRequest
 import com.android.purebilibili.core.util.FormatUtils
 import com.android.purebilibili.data.model.response.VideoItem
 import com.android.purebilibili.feature.home.HomeHeroCarouselCardTransform
+import com.android.purebilibili.feature.home.HOME_HERO_CAROUSEL_SIDE_PEEK_DP
 import com.android.purebilibili.feature.home.resolveHomeHeroCarouselCardTransform
 import com.android.purebilibili.feature.home.resolveHomeHeroCarouselPreviewAlpha
 import kotlin.math.absoluteValue
@@ -80,7 +81,7 @@ internal fun HomeHeroCarousel(
             .fillMaxWidth()
             .padding(vertical = 4.dp)
     ) {
-        val sidePeek = 12.dp
+        val sidePeek = HOME_HERO_CAROUSEL_SIDE_PEEK_DP.dp
         val pageWidth = (maxWidth - sidePeek * 2).coerceAtLeast(0.dp)
         HorizontalPager(
             state = pagerState,
@@ -159,6 +160,7 @@ private fun HomeHeroCarouselCard(
             .graphicsLayer {
                 transformOrigin = TransformOrigin(transform.pivotFractionX, 0.5f)
                 rotationY = transform.rotationY
+                rotationZ = transform.rotationZ
                 translationX = transform.translationXFraction * size.width
                 scaleX = transform.scale
                 scaleY = transform.scale

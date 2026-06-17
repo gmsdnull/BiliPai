@@ -40,4 +40,22 @@ class HomeCategoryPageKeyPolicyTest {
 
         assertEquals("home_video_42_77_5", key)
     }
+
+    @Test
+    fun `hero carousel dedup key uses bvid before numeric ids`() {
+        val key = resolveHomeHeroCarouselDedupKey(
+            VideoItem(id = 42L, aid = 77L, bvid = "BV1SEorB6E6u")
+        )
+
+        assertEquals("bvid_BV1SEorB6E6u", key)
+    }
+
+    @Test
+    fun `hero carousel dedup key falls back when bvid is blank`() {
+        val key = resolveHomeHeroCarouselDedupKey(
+            VideoItem(id = 42L, aid = 77L)
+        )
+
+        assertEquals("id_42", key)
+    }
 }
