@@ -385,6 +385,14 @@ class PortraitDetailPresentationPolicyTest {
                 compactForCommentTabProgress = 0.6f
             )
         )
+        assertEquals(
+            0f,
+            resolveInlinePortraitPlayerCollapseProgress(
+                manualCollapseProgress = 1f,
+                compactForCommentTabProgress = 1f,
+                restoreRequested = true
+            )
+        )
     }
 
     @Test

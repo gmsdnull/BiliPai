@@ -1478,7 +1478,8 @@ private fun VideoPageItem(
                 longPressSpeed,
                 currentAudioQuality,
                 isCurrentPage,
-                commentExpansionTransform.playerGesturesEnabled
+                commentExpansionTransform.playerGesturesEnabled,
+                portraitOverlayVisible
             ) {
                 detectTapGestures(
                     onTap = {
@@ -1488,7 +1489,9 @@ private fun VideoPageItem(
                         ) {
                             return@detectTapGestures
                         }
-                        onPortraitOverlayVisibleChange(!portraitOverlayVisible)
+                        onPortraitOverlayVisibleChange(
+                            resolvePortraitOverlayVisibilityAfterTap(portraitOverlayVisible)
+                        )
                     },
                     onDoubleTap = {
                         if (
@@ -2360,6 +2363,10 @@ internal fun resolvePortraitOverlayControlsVisible(
     showDetailSheet: Boolean
 ): Boolean {
     return portraitOverlayVisible && !showDetailSheet
+}
+
+internal fun resolvePortraitOverlayVisibilityAfterTap(currentlyVisible: Boolean): Boolean {
+    return !currentlyVisible
 }
 
 internal fun resolvePortraitFavoriteAction(): PortraitFavoriteAction {

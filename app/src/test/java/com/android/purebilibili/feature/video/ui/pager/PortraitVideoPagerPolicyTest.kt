@@ -208,6 +208,12 @@ class PortraitVideoPagerPolicyTest {
     }
 
     @Test
+    fun portraitOverlayTap_togglesFromCurrentVisibility() {
+        assertFalse(resolvePortraitOverlayVisibilityAfterTap(currentlyVisible = true))
+        assertTrue(resolvePortraitOverlayVisibilityAfterTap(currentlyVisible = false))
+    }
+
+    @Test
     fun portraitPlaybackAllowed_onlyWhenStoryTabVisibleAndLifecycleResumed() {
         assertTrue(
             shouldAllowPortraitPlayback(

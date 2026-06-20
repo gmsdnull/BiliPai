@@ -3158,6 +3158,7 @@ fun VideoDetailScreen(
                     var introFirstVisibleItemScrollOffset by remember { mutableIntStateOf(0) }
                     var commentFirstVisibleItemIndex by remember { mutableIntStateOf(0) }
                     var commentFirstVisibleItemScrollOffset by remember { mutableIntStateOf(0) }
+                    var keepPlayerExpandedUntilNextScroll by remember { mutableStateOf(false) }
                     val compactInlinePlayerForCommentTab =
                         shouldUseCompactInlinePortraitPlayerForCommentTab(
                             useOfficialInlinePortraitDetailExperience = useOfficialInlinePortraitDetailExperience,
@@ -3237,6 +3238,7 @@ fun VideoDetailScreen(
                     val nestedScrollConnection = remember(inlinePortraitScrollEnabled, isPortraitFullscreen) {
                         object : NestedScrollConnection {
                             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                                if (available.y != 0f) keepPlayerExpandedUntilNextScroll = false
                                 val scrollUpdate = reduceVideoDetailPreScroll(
                                     currentOffsetPx = playerHeightOffsetPx,
                                     deltaPx = available.y,
@@ -3249,6 +3251,7 @@ fun VideoDetailScreen(
                             }
 
                             override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                                if (available.y != 0f) keepPlayerExpandedUntilNextScroll = false
                                 val scrollUpdate = reduceVideoDetailPostScroll(
                                     currentOffsetPx = playerHeightOffsetPx,
                                     deltaPx = available.y,
@@ -3290,7 +3293,8 @@ fun VideoDetailScreen(
                     )
                     val effectiveCollapseProgress = resolveInlinePortraitPlayerCollapseProgress(
                         manualCollapseProgress = collapseProgress,
-                        compactForCommentTabProgress = commentTabCollapseProgress
+                        compactForCommentTabProgress = commentTabCollapseProgress,
+                        restoreRequested = keepPlayerExpandedUntilNextScroll
                     )
                     val expandedViewportHeight = if (useOfficialInlinePortraitDetailExperience) {
                         expandedPortraitInlineSpec.heightDp.dp
@@ -3590,7 +3594,10 @@ fun VideoDetailScreen(
                                     selectedFavoriteFolderIds = selectedFavoriteFolderIds,
                                     isSavingFavoriteFolders = isSavingFavoriteFolders,
                                     isPlayerCollapsed = isPlayerCollapsed,
-                                    onRestorePlayer = { playerHeightOffsetPx = 0f },
+                                    onRestorePlayer = {
+                                        keepPlayerExpandedUntilNextScroll = true
+                                        playerHeightOffsetPx = 0f
+                                    },
                                     onBgmClick = onBgmClick,
                                     homeUpBadgesVisible = homeUpBadgesVisible,
                                     isVideoPlaying = isVideoPlaying,

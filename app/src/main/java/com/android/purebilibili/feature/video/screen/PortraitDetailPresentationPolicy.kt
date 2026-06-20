@@ -126,8 +126,10 @@ internal fun shouldUseCompactInlinePortraitPlayerForIntroScroll(
 
 internal fun resolveInlinePortraitPlayerCollapseProgress(
     manualCollapseProgress: Float,
-    compactForCommentTabProgress: Float
+    compactForCommentTabProgress: Float,
+    restoreRequested: Boolean = false
 ): Float {
+    if (restoreRequested) return 0f
     return manualCollapseProgress
         .coerceIn(0f, 1f)
         .coerceAtLeast(compactForCommentTabProgress.coerceIn(0f, 1f))
