@@ -93,6 +93,7 @@ import com.android.purebilibili.feature.video.playback.policy.resolvePlaybackHea
 import com.android.purebilibili.feature.video.playback.policy.shouldHoldPlaybackResumeTransitionPosition
 import com.android.purebilibili.feature.video.playback.policy.resolvePluginPollingIntervalMs
 import com.android.purebilibili.feature.video.playback.policy.shouldRefreshOnlineCount
+import com.android.purebilibili.feature.video.playback.policy.shouldSendInitialPlaybackHeartbeat
 import com.android.purebilibili.feature.video.playback.policy.shouldSendPlaybackHeartbeat
 import com.android.purebilibili.feature.video.playback.policy.shouldFlushPlaybackHeartbeatSnapshot
 import com.android.purebilibili.feature.video.playback.policy.shouldDispatchPluginPositionUpdate
@@ -7112,8 +7113,8 @@ class PlayerViewModel : ViewModel() {
         heartbeatJob?.cancel()
         beginHeartbeatSession()
         heartbeatJob = viewModelScope.launch {
-            if (shouldSendPlaybackHeartbeat(
-                    isPlaying = true,
+            if (shouldSendInitialPlaybackHeartbeat(
+                    isActivelyPlaying = exoPlayer?.isPlaying == true,
                     isInBackground = BackgroundManager.isInBackground,
                     currentBvid = currentBvid,
                     currentCid = currentCid
