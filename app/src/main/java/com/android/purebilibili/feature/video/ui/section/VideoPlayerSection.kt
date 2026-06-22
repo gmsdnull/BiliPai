@@ -3593,7 +3593,11 @@ fun VideoPlayerSection(
                             .background(markerColor.copy(alpha = lockZoneVisual.centerMarkerAlpha))
                     )
                 }
-                Box(modifier = zoneModifier.align(Alignment.BottomCenter)) {
+                Box(
+                    modifier = zoneModifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = lockZoneVisual.bottomVisualOffsetDp.dp)
+                ) {
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)

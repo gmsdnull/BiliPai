@@ -45,7 +45,8 @@ internal data class LongPressSpeedLockZoneVisualPolicy(
     val centerMarkerAlpha: Float,
     val edgeGradientHeightDp: Int,
     val centerMarkerHeightDp: Int,
-    val centerMarkerWidthFraction: Float
+    val centerMarkerWidthFraction: Float,
+    val bottomVisualOffsetDp: Int
 )
 
 internal data class LongPressSpeedStartDecision(
@@ -61,8 +62,9 @@ internal fun resolveLongPressSpeedLockZoneVisualPolicy(): LongPressSpeedLockZone
         edgeGradientAlpha = 0.24f,
         centerMarkerAlpha = 0.68f,
         edgeGradientHeightDp = 16,
-        centerMarkerHeightDp = 3,
-        centerMarkerWidthFraction = 0.34f
+        centerMarkerHeightDp = 4,
+        centerMarkerWidthFraction = 0.22f,
+        bottomVisualOffsetDp = 10
     )
 }
 

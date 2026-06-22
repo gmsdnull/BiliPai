@@ -1104,14 +1104,16 @@ class VideoPlayerSectionPolicyTest {
     }
 
     @Test
-    fun longPressSpeedLock_visualHidesBroadGlassZones() {
+    fun longPressSpeedLock_visualSeparatesMarkerFromPlaybackProgress() {
         val visual = resolveLongPressSpeedLockZoneVisualPolicy()
 
         assertEquals(0f, visual.zoneFillAlpha)
         assertEquals(0f, visual.borderAlpha)
         assertTrue(visual.edgeGradientAlpha > 0f)
         assertTrue(visual.centerMarkerAlpha > visual.edgeGradientAlpha)
-        assertTrue(visual.centerMarkerWidthFraction < 0.5f)
+        assertEquals(4, visual.centerMarkerHeightDp)
+        assertEquals(0.22f, visual.centerMarkerWidthFraction)
+        assertEquals(10, visual.bottomVisualOffsetDp)
     }
 
     @Test
