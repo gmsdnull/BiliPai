@@ -384,6 +384,48 @@ class BiliPaiNavEntryProviderPolicyTest {
     }
 
     @Test
+    fun entryPopWithParameterizedCardSourceUsesNoOpRouteLayer() {
+        listOf(
+            "category/1" to "category",
+            "space/123" to "space",
+            "dynamic_detail/456" to "dynamic_detail"
+        ).forEach { (sourceRoute, targetRouteBase) ->
+            val transition = resolveBiliPaiNavEntryPopRouteTransition(
+                defaultTransition = BiliPaiNavRouteTransition.FALLBACK,
+                fromRoute = "video",
+                toRoute = targetRouteBase,
+                cardTransitionEnabled = true,
+                sourceMetadata = BiliPaiNavSourceMetadata(
+                    sourceKey = "$sourceRoute:BV1",
+                    sourceRoute = sourceRoute,
+                    clickedBoundsRecorded = true,
+                    cardFullyVisible = true
+                )
+            )
+
+            assertEquals(BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT, transition, sourceRoute)
+        }
+    }
+
+    @Test
+    fun entryPopWithMismatchedParameterizedCardSourceKeepsFallbackRouteLayer() {
+        val transition = resolveBiliPaiNavEntryPopRouteTransition(
+            defaultTransition = BiliPaiNavRouteTransition.FALLBACK,
+            fromRoute = "video",
+            toRoute = "space",
+            cardTransitionEnabled = true,
+            sourceMetadata = BiliPaiNavSourceMetadata(
+                sourceKey = "category/1:BV1",
+                sourceRoute = "category/1",
+                clickedBoundsRecorded = true,
+                cardFullyVisible = true
+            )
+        )
+
+        assertEquals(BiliPaiNavRouteTransition.FALLBACK, transition)
+    }
+
+    @Test
     fun entryPopWithDisabledSharedTransition_popToMainHostStillSlidesHorizontally() {
         // 实际栈是 [MainHost, VideoDetail]，pop 时 toRoute = "main_host"，
         // 必须保证 main_host 也算 card-return-target，否则 entry-level 元数据上的

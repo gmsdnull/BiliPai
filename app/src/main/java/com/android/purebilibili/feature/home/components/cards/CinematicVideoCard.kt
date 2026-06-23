@@ -1,7 +1,6 @@
 package com.android.purebilibili.feature.home.components.cards
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -67,6 +66,7 @@ import com.android.purebilibili.core.ui.transition.resolveVideoCardSharedTransit
 import com.android.purebilibili.core.ui.transition.shouldEnableVideoCoverSharedTransition
 import com.android.purebilibili.core.ui.transition.shouldEnableVideoMetadataSharedTransition
 import com.android.purebilibili.core.ui.transition.videoCoverSharedElementKey
+import com.android.purebilibili.core.ui.transition.videoSharedElementBoundsTransformSpec
 import com.android.purebilibili.core.util.CardPositionManager
 import com.android.purebilibili.core.util.FormatUtils
 import com.android.purebilibili.core.util.HapticType
@@ -300,7 +300,7 @@ fun CinematicVideoCard(
                         titleModifier = titleModifier.sharedBounds(
                             sharedContentState = rememberSharedContentState(key = com.android.purebilibili.core.ui.transition.videoTitleSharedElementKey(video.bvid)),
                             animatedVisibilityScope = requireNotNull(animatedVisibilityScope),
-                            boundsTransform = { _, _ -> spring(dampingRatio = 0.8f, stiffness = 200f) }
+                            boundsTransform = { _, _ -> videoSharedElementBoundsTransformSpec(cardSharedTransitionMotionSpec) }
                         )
                     }
                 }
@@ -327,10 +327,10 @@ fun CinematicVideoCard(
                      var upNameModifier = Modifier.wrapContentSize()
                      if (metadataSharedEnabled) {
                          with(requireNotNull(sharedTransitionScope)) {
-                             upNameModifier = upNameModifier.sharedBounds(
+                            upNameModifier = upNameModifier.sharedBounds(
                                 sharedContentState = rememberSharedContentState(key = com.android.purebilibili.core.ui.transition.videoUpNameSharedElementKey(video.bvid)),
                                 animatedVisibilityScope = requireNotNull(animatedVisibilityScope),
-                                boundsTransform = { _, _ -> spring(dampingRatio = 0.8f, stiffness = 200f) }
+                                boundsTransform = { _, _ -> videoSharedElementBoundsTransformSpec(cardSharedTransitionMotionSpec) }
                              )
                          }
                      }
@@ -348,7 +348,9 @@ fun CinematicVideoCard(
                                          avatarModifier = avatarModifier.sharedBounds(
                                              sharedContentState = rememberSharedContentState(key = com.android.purebilibili.core.ui.transition.videoAvatarSharedElementKey(video.bvid)),
                                              animatedVisibilityScope = requireNotNull(animatedVisibilityScope),
-                                             boundsTransform = { _, _ -> spring(dampingRatio = 0.8f, stiffness = 200f) },
+                                             boundsTransform = { _, _ ->
+                                                 videoSharedElementBoundsTransformSpec(cardSharedTransitionMotionSpec)
+                                             },
                                              clipInOverlayDuringTransition = OverlayClip(CircleShape)
                                          )
                                      }

@@ -204,12 +204,39 @@ class VideoSharedTransitionPolicyTest {
         val detailInfoSource = File(
             "src/main/java/com/android/purebilibili/feature/video/ui/section/VideoInfoSection.kt"
         ).readText()
+        val partitionSource = File(
+            "src/main/java/com/android/purebilibili/feature/partition/PartitionScreen.kt"
+        ).readText()
+        val cinematicCardSource = File(
+            "src/main/java/com/android/purebilibili/feature/home/components/cards/CinematicVideoCard.kt"
+        ).readText()
+        val glassCardSource = File(
+            "src/main/java/com/android/purebilibili/feature/home/components/cards/GlassVideoCard.kt"
+        ).readText()
+        val dynamicCardSource = File(
+            "src/main/java/com/android/purebilibili/feature/dynamic/components/VideoCards.kt"
+        ).readText()
+        val watchLaterSource = File(
+            "src/main/java/com/android/purebilibili/feature/watchlater/WatchLaterScreen.kt"
+        ).readText()
+        val spaceSource = File(
+            "src/main/java/com/android/purebilibili/feature/space/SpaceScreen.kt"
+        ).readText()
 
         assertTrue(homeCardSource.contains("videoSharedElementBoundsTransformSpec(homeSharedTransitionMotionSpec)"))
         assertFalse(homeCardSource.contains("AppMotionTokens.spatialSpec()"))
         assertTrue(detailInfoSource.contains("resolveVideoMetadataSharedTransitionMotionSpec("))
         assertTrue(detailInfoSource.contains("videoSharedElementBoundsTransformSpec(metadataSharedTransitionMotionSpec)"))
         assertFalse(detailInfoSource.contains("spring(dampingRatio = 0.8f, stiffness = 200f)"))
+        assertTrue(partitionSource.contains("videoSharedElementBoundsTransformSpec(sharedTransitionMotionSpec)"))
+        assertFalse(partitionSource.contains("spring(dampingRatio = 0.8f, stiffness = 200f)"))
+        assertTrue(cinematicCardSource.contains("videoSharedElementBoundsTransformSpec(cardSharedTransitionMotionSpec)"))
+        assertFalse(cinematicCardSource.contains("spring(dampingRatio = 0.8f, stiffness = 200f)"))
+        assertTrue(glassCardSource.contains("videoTitleSharedElementKey(video.bvid)"))
+        assertTrue(glassCardSource.contains("videoSharedElementBoundsTransformSpec(cardSharedTransitionMotionSpec)"))
+        assertTrue(dynamicCardSource.contains("videoSharedElementBoundsTransformSpec(sharedTransitionMotionSpec)"))
+        assertTrue(watchLaterSource.contains("videoSharedElementBoundsTransformSpec(sharedTransitionMotionSpec)"))
+        assertTrue(spaceSource.contains("videoSharedElementBoundsTransformSpec(cardSharedTransitionMotionSpec)"))
     }
 
     @Test

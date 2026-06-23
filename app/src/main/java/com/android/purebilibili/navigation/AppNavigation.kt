@@ -1990,7 +1990,10 @@ fun AppNavigation(
                                     onBack = { performSystemBackAction() },
                                     onVideoClick = { bvid, cid, cover ->
                                         navigateToVideoInNavigation3(bvid, cid, cover)
-                                    }
+                                    },
+                                    isReturningFromVideoDetail = navigation3ReturnSession.isReturningFromDetail,
+                                    isQuickReturningFromVideoDetail =
+                                        navigation3ReturnSession.isQuickReturnFromDetail
                                 )
                             }
                         BiliPaiNavEntryContentRole.SEASON_SERIES_DETAIL -> {

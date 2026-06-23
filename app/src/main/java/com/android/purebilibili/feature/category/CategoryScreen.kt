@@ -105,6 +105,8 @@ fun CategoryScreen(
     name: String,
     onBack: () -> Unit,
     onVideoClick: (String, Long, String) -> Unit = { _, _, _ -> },
+    isReturningFromVideoDetail: Boolean = false,
+    isQuickReturningFromVideoDetail: Boolean = false,
     viewModel: CategoryViewModel = viewModel()
 ) {
     val videos by viewModel.videos.collectAsStateWithLifecycle()
@@ -243,6 +245,8 @@ fun CategoryScreen(
                                     cardHorizontalPadding = cardLayout.storyCardHorizontalPaddingDp.dp,
                                     compactMetadata = cardLayout.compactMetadata,
                                     showOnlineCount = showOnlineCount,
+                                    isReturningFromVideoDetail = isReturningFromVideoDetail,
+                                    isQuickReturningFromVideoDetail = isQuickReturningFromVideoDetail,
                                     onClick = { bvid, _ -> onVideoClick(bvid, video.id, video.pic) }
                                 )
                             }
@@ -257,6 +261,8 @@ fun CategoryScreen(
                                     coverAspectRatio = cardLayout.coverAspectRatio,
                                     compactMetadata = cardLayout.compactMetadata,
                                     showOnlineCount = showOnlineCount,
+                                    isReturningFromVideoDetail = isReturningFromVideoDetail,
+                                    isQuickReturningFromVideoDetail = isQuickReturningFromVideoDetail,
                                     onClick = { bvid, _ -> onVideoClick(bvid, video.id, video.pic) }
                                 )
                             }

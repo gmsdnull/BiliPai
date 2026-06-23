@@ -26,6 +26,7 @@ class PartitionScreenStructureTest {
         assertTrue(source.contains("videoCoverSharedElementKey("))
         assertTrue(source.contains("shouldEnableVideoMetadataSharedTransition("))
         assertTrue(source.contains("videoTitleSharedElementKey(video.bvid)"))
+        assertTrue(source.contains("videoSharedElementBoundsTransformSpec(sharedTransitionMotionSpec)"))
         assertTrue(source.contains("LocalVideoCardSharedElementSourceRoute.current"))
         assertTrue(source.contains("VideoRepository.getPopularVideos(page = currentPage)"))
         assertTrue(source.contains("VideoRepository.getRegionVideos(tid = partition.id, page = currentPage)"))
@@ -147,6 +148,7 @@ class PartitionScreenStructureTest {
 
         assertTrue(rowSource.contains("val sharedTransitionEnabled = LocalSharedTransitionEnabled.current"))
         assertTrue(rowSource.contains("transitionEnabled = sharedTransitionEnabled"))
+        assertFalse(rowSource.contains("spring(dampingRatio = 0.8f, stiffness = 200f)"))
         assertFalse(rowSource.contains("transitionEnabled = true"))
     }
 

@@ -110,6 +110,7 @@ import com.android.purebilibili.core.ui.transition.LocalVideoSharedTransitionSpe
 import com.android.purebilibili.core.ui.transition.VIDEO_SHARED_COVER_ASPECT_RATIO
 import com.android.purebilibili.core.ui.transition.resolveVideoCardSharedTransitionMotionSpec
 import com.android.purebilibili.core.ui.transition.videoCoverSharedElementKey
+import com.android.purebilibili.core.ui.transition.videoSharedElementBoundsTransformSpec
 import com.android.purebilibili.core.ui.components.UserLevelBadge
 import com.android.purebilibili.core.util.FormatUtils
 import com.android.purebilibili.core.util.CardPositionManager
@@ -3148,7 +3149,7 @@ private fun SpaceArchiveListItemRow(
                             ),
                             animatedVisibilityScope = requireNotNull(animatedVisibilityScope),
                             boundsTransform = { _, _ ->
-                                com.android.purebilibili.core.ui.motion.AppMotionTokens.spatialSpec()
+                                videoSharedElementBoundsTransformSpec(cardSharedTransitionMotionSpec)
                             }
                         )
                 }
@@ -3200,7 +3201,7 @@ private fun SpaceArchiveListItemRow(
                             ),
                             animatedVisibilityScope = requireNotNull(animatedVisibilityScope),
                             boundsTransform = { _, _ ->
-                                com.android.purebilibili.core.ui.motion.AppMotionTokens.spatialSpec()
+                                videoSharedElementBoundsTransformSpec(cardSharedTransitionMotionSpec)
                             },
                             clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(4.dp))
                         )
@@ -3218,7 +3219,7 @@ private fun SpaceArchiveListItemRow(
                             ),
                             animatedVisibilityScope = requireNotNull(animatedVisibilityScope),
                             boundsTransform = { _, _ ->
-                                com.android.purebilibili.core.ui.motion.AppMotionTokens.spatialSpec()
+                                videoSharedElementBoundsTransformSpec(cardSharedTransitionMotionSpec)
                             },
                             clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(4.dp))
                         )

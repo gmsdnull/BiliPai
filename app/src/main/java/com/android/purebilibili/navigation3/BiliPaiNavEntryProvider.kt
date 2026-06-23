@@ -229,7 +229,7 @@ internal fun resolveBiliPaiNavEntryPopRouteTransition(
 ): BiliPaiNavRouteTransition {
     val normalizedFromRoute = normalizeBiliPaiNavEntryRouteBase(fromRoute)
     val normalizedToRoute = normalizeBiliPaiNavEntryRouteBase(toRoute)
-    val normalizedSourceRoute = normalizeBiliPaiNavEntryRouteBase(sourceMetadata.sourceRoute)
+    val normalizedSourceRoute = normalizeBiliPaiNavCardSourceRouteBase(sourceMetadata.sourceRoute)
     val videoToCardReturnTarget = normalizedFromRoute == VIDEO_ROUTE_BASE &&
         normalizedToRoute != null &&
         isCardReturnTargetRouteBase(normalizedToRoute)
@@ -321,6 +321,17 @@ private fun normalizeBiliPaiNavEntryRouteBase(route: String?): String? {
     return route
         ?.substringBefore("?")
         ?.takeIf { it.isNotBlank() }
+}
+
+private fun normalizeBiliPaiNavCardSourceRouteBase(route: String?): String? {
+    val routeBase = normalizeBiliPaiNavEntryRouteBase(route) ?: return null
+    return when {
+        routeBase.startsWith("dynamic_detail/") -> "dynamic_detail"
+        routeBase.startsWith("space/") -> "space"
+        routeBase.startsWith("category/") -> "category"
+        routeBase.startsWith("season_series_detail/") -> "season_series_detail"
+        else -> routeBase
+    }
 }
 
 private fun isCardReturnTargetRouteBase(routeBase: String): Boolean {

@@ -169,6 +169,28 @@ class AppNavigationNavigation3BridgeStructureTest {
     }
 
     @Test
+    fun categoryPassesVideoReturnStateToSuppressCardEnterAnimation() {
+        val source = appNavigationSource()
+        val categoryBranch = source
+            .substringAfter("BiliPaiNavEntryContentRole.CATEGORY ->")
+            .substringBefore("BiliPaiNavEntryContentRole.SEASON_SERIES_DETAIL ->")
+
+        assertTrue(categoryBranch.contains("isReturningFromVideoDetail = navigation3ReturnSession.isReturningFromDetail"))
+        assertTrue(categoryBranch.contains("isQuickReturningFromVideoDetail ="))
+        assertTrue(categoryBranch.contains("navigation3ReturnSession.isQuickReturnFromDetail"))
+    }
+
+    @Test
+    fun categoryCardsReceiveVideoReturnStateToSuppressEnterAnimation() {
+        val source = categoryScreenSource()
+
+        assertTrue(source.contains("isReturningFromVideoDetail: Boolean = false"))
+        assertTrue(source.contains("isQuickReturningFromVideoDetail: Boolean = false"))
+        assertTrue(source.contains("isReturningFromVideoDetail = isReturningFromVideoDetail"))
+        assertTrue(source.contains("isQuickReturningFromVideoDetail = isQuickReturningFromVideoDetail"))
+    }
+
+    @Test
     fun classicBackMarksVideoReturnBeforePoppingNavigation3Stack() {
         val source = appNavigationSource()
 
@@ -315,6 +337,13 @@ class AppNavigationNavigation3BridgeStructureTest {
         return listOf(
             File("app/build.gradle.kts"),
             File("build.gradle.kts")
+        ).first { it.exists() }.readText()
+    }
+
+    private fun categoryScreenSource(): String {
+        return listOf(
+            File("app/src/main/java/com/android/purebilibili/feature/category/CategoryScreen.kt"),
+            File("src/main/java/com/android/purebilibili/feature/category/CategoryScreen.kt")
         ).first { it.exists() }.readText()
     }
 
