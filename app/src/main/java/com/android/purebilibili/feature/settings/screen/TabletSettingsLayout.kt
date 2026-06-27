@@ -19,6 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import android.os.Build
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Color
@@ -30,8 +32,12 @@ import com.android.purebilibili.core.ui.AdaptiveSplitLayout
 import com.android.purebilibili.core.ui.AppSurfaceTokens
 import com.android.purebilibili.core.ui.globalWallpaperAwareBackground
 import com.android.purebilibili.core.ui.rememberAppBackIcon
+import com.android.purebilibili.core.ui.adaptive.resolveDeviceUiProfile
+import com.android.purebilibili.core.ui.adaptive.resolveEffectiveMotionTier
 import com.android.purebilibili.core.ui.animation.EntranceGroup
 import com.android.purebilibili.core.ui.motion.rememberSystemReduceMotion
+import com.android.purebilibili.core.util.LocalWindowSizeClass
+import com.android.purebilibili.feature.settings.ui.settingsRootCategoryExitBlurModifier
 import com.android.purebilibili.core.ui.rememberAppSettingsIcon
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.launch
@@ -151,6 +157,35 @@ fun TabletSettingsLayout(
     val entranceAnimationEnabled by SettingsManager.getUiEntranceAnimationEnabled(context)
         .collectAsStateWithLifecycle(initialValue = true)
     val reduceMotion = rememberSystemReduceMotion()
+    val windowSizeClass = LocalWindowSizeClass.current
+    val motionTier = remember(windowSizeClass.widthSizeClass, entranceAnimationEnabled) {
+        resolveEffectiveMotionTier(
+            baseTier = resolveDeviceUiProfile(windowSizeClass.widthSizeClass).motionTier,
+            animationEnabled = entranceAnimationEnabled
+        )
+    }
+    val transitionBlurEnabled = remember(
+        entranceAnimationEnabled,
+        reduceMotion,
+        motionTier
+    ) {
+        resolveSettingsRootCategoryTransitionBlurEnabled(
+            animationEnabled = entranceAnimationEnabled,
+            reduceMotion = reduceMotion,
+            sdkInt = Build.VERSION.SDK_INT,
+            motionTier = motionTier
+        )
+    }
+    val density = LocalDensity.current
+    val maxTransitionBlurRadiusPx = remember(density, motionTier, transitionBlurEnabled) {
+        if (!transitionBlurEnabled) {
+            0f
+        } else {
+            with(density) {
+                resolveSettingsRootCategoryMaxBlurRadiusDp(motionTier).dp.toPx()
+            }
+        }
+    }
     val rootCategoryActions = SettingsRootCategoryActions(
         onAppearanceClick = { activeDetail = SettingsDetail.APPEARANCE },
         onAnimationClick = { activeDetail = SettingsDetail.ANIMATION },
@@ -628,6 +663,13 @@ fun TabletSettingsLayout(
                         label = "SettingsDetailTransition"
                     ) { category ->
                         val settled = !transition.isRunning
+                        Box(
+                            modifier = settingsRootCategoryExitBlurModifier(
+                                contentKey = category,
+                                blurEnabled = transitionBlurEnabled,
+                                maxBlurRadiusPx = maxTransitionBlurRadiusPx
+                            )
+                        ) {
                         EntranceGroup(startWhen = settled) {
                             Column(
                                 modifier = Modifier
@@ -659,6 +701,7 @@ fun TabletSettingsLayout(
                                         .windowInsetsBottomHeight(WindowInsets.navigationBars)
                                 )
                             }
+                        }
                         }
                     }
 

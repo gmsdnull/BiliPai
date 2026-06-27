@@ -30,6 +30,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.painterResource
@@ -64,6 +65,7 @@ import com.android.purebilibili.core.ui.TopReadabilityChrome
 import com.android.purebilibili.core.ui.rememberAppBackIcon
 import com.android.purebilibili.core.ui.adaptive.resolveDeviceUiProfile
 import com.android.purebilibili.core.ui.adaptive.resolveEffectiveMotionTier
+import com.android.purebilibili.feature.settings.ui.settingsRootCategoryExitBlurModifier
 import com.android.purebilibili.core.plugin.PluginManager
 
 import com.android.purebilibili.core.ui.blur.hazeSourceCompat
@@ -1306,6 +1308,34 @@ private fun MobileSettingsLayout(
     val entranceAnimationEnabled by SettingsManager.getUiEntranceAnimationEnabled(context)
         .collectAsStateWithLifecycle(initialValue = true)
     val reduceMotion = rememberSystemReduceMotion()
+    val motionTier = remember(deviceUiProfile.motionTier, entranceAnimationEnabled) {
+        resolveEffectiveMotionTier(
+            baseTier = deviceUiProfile.motionTier,
+            animationEnabled = entranceAnimationEnabled
+        )
+    }
+    val transitionBlurEnabled = remember(
+        entranceAnimationEnabled,
+        reduceMotion,
+        motionTier
+    ) {
+        resolveSettingsRootCategoryTransitionBlurEnabled(
+            animationEnabled = entranceAnimationEnabled,
+            reduceMotion = reduceMotion,
+            sdkInt = Build.VERSION.SDK_INT,
+            motionTier = motionTier
+        )
+    }
+    val density = LocalDensity.current
+    val maxTransitionBlurRadiusPx = remember(density, motionTier, transitionBlurEnabled) {
+        if (!transitionBlurEnabled) {
+            0f
+        } else {
+            with(density) {
+                resolveSettingsRootCategoryMaxBlurRadiusDp(motionTier).dp.toPx()
+            }
+        }
+    }
     val focusRequest by SettingsSearchFocusController.request.collectAsStateWithLifecycle()
     val bottomBarVisible = LocalBottomBarVisible.current
     val bottomInset = resolveSettingsContentBottomPadding(
@@ -1467,6 +1497,13 @@ private fun MobileSettingsLayout(
                     label = "SettingsRootBody"
                 ) { destination ->
                     val settled = !transition.isRunning
+                    Box(
+                        modifier = settingsRootCategoryExitBlurModifier(
+                            contentKey = destination,
+                            blurEnabled = transitionBlurEnabled,
+                            maxBlurRadiusPx = maxTransitionBlurRadiusPx
+                        )
+                    ) {
                     EntranceGroup(startWhen = settled) {
                         when (destination) {
                             SettingsRootBodyDestination.Home -> {
@@ -1541,6 +1578,7 @@ private fun MobileSettingsLayout(
                                 }
                             }
                         }
+                    }
                     }
                 }
             }
