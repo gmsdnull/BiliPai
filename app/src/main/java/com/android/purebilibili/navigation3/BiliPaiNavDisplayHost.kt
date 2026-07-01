@@ -45,8 +45,9 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.navigationevent.NavigationEventTransitionState.InProgress
 import com.android.purebilibili.navigation3.predictiveback.BiliPaiPredictiveBackAnimationHandler
 import com.android.purebilibili.navigation3.predictiveback.BiliPaiPredictiveBackAnimationStyle
-import com.android.purebilibili.navigation3.predictiveback.BiliPaiPredictiveBackExitDirection
+import com.android.purebilibili.navigation3.predictiveback.resolveBiliPaiAutoPredictiveBackExitDirection
 import com.android.purebilibili.navigation3.predictiveback.resolveBiliPaiPredictiveBackAnimationHandler
+import com.android.purebilibili.navigation3.predictiveback.resolveBiliPaiPredictiveBackExitDirection
 import kotlinx.coroutines.launch
 
 @Composable
@@ -55,6 +56,7 @@ internal fun BiliPaiNavDisplayHost(
     cardTransitionEnabled: Boolean = true,
     predictiveBackEnabled: Boolean = true,
     predictiveBackAnimationStyle: BiliPaiPredictiveBackAnimationStyle = BiliPaiPredictiveBackAnimationStyle.SCALE,
+    predictiveBackExitDirectionOverride: String = "auto",
     sourceMetadata: BiliPaiNavSourceMetadata,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -79,18 +81,20 @@ internal fun BiliPaiNavDisplayHost(
             toKey = safeBackStack.getOrNull(safeBackStack.lastIndex - 1)
         )
     }
-    val predictiveBackExitDirection = remember(popRouteTransition, sourceMetadata.cardSourceDirection) {
-        if (popRouteTransition == BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT) {
-            // 共享元素过渡：跟随手势方向。共享元素动画自身已通过 start/end bounds
-            // 驱动视觉位移方向，页面滑动如果硬编码为与手势相反的方向会产生视觉冲突。
-            BiliPaiPredictiveBackExitDirection.FOLLOW_GESTURE
-        } else {
-            when (sourceMetadata.cardSourceDirection) {
-                BiliPaiNavCardSourceDirection.SOURCE_LEFT -> BiliPaiPredictiveBackExitDirection.ALWAYS_RIGHT
-                BiliPaiNavCardSourceDirection.SOURCE_RIGHT -> BiliPaiPredictiveBackExitDirection.ALWAYS_LEFT
-                BiliPaiNavCardSourceDirection.NONE -> BiliPaiPredictiveBackExitDirection.FOLLOW_GESTURE
-            }
-        }
+    val autoPredictiveBackExitDirection = remember(popRouteTransition, sourceMetadata.cardSourceDirection) {
+        resolveBiliPaiAutoPredictiveBackExitDirection(
+            popRouteTransition = popRouteTransition,
+            cardSourceDirection = sourceMetadata.cardSourceDirection,
+        )
+    }
+    val predictiveBackExitDirection = remember(
+        autoPredictiveBackExitDirection,
+        predictiveBackExitDirectionOverride,
+    ) {
+        resolveBiliPaiPredictiveBackExitDirection(
+            storageValue = predictiveBackExitDirectionOverride,
+            autoDerived = autoPredictiveBackExitDirection,
+        )
     }
     val predictiveBackHandler: BiliPaiPredictiveBackAnimationHandler = remember(
         popRouteTransition,
@@ -227,7 +231,8 @@ internal fun BiliPaiNavDisplayHost(
     NavigationBackHandler(
         state = navigationEventState,
         isBackEnabled = scene.previousEntries.isNotEmpty(),
-        onBackCompleted = performBack
+        onBackCompleted = performBack,
+        onBackCancelled = { commitTransition -> commitTransition() },
     )
 
     NavDisplay(

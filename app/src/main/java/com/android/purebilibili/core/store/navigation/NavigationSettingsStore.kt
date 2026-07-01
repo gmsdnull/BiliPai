@@ -16,6 +16,7 @@ object NavigationSettingsStore {
     private val keyTabletUseSidebar = booleanPreferencesKey("tablet_use_sidebar")
     private val keyPredictiveBackEnabled = booleanPreferencesKey("predictive_back_enabled")
     private val keyPredictiveBackAnimationStyle = stringPreferencesKey("predictive_back_animation_style")
+    private val keyPredictiveBackExitDirection = stringPreferencesKey("predictive_back_exit_direction")
 
     internal fun mapFromPreferences(preferences: Preferences): AppNavigationSettings {
         return mapAppNavigationSettingsFromPreferences(preferences)
@@ -42,6 +43,12 @@ object NavigationSettingsStore {
     suspend fun setPredictiveBackAnimationStyle(context: Context, style: String) {
         context.settingsDataStore.edit { preferences ->
             preferences[keyPredictiveBackAnimationStyle] = style
+        }
+    }
+
+    suspend fun setPredictiveBackExitDirection(context: Context, direction: String) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[keyPredictiveBackExitDirection] = direction
         }
     }
 }

@@ -900,6 +900,7 @@ fun AppNavigation(
                 appNavigationSettings.predictiveBackAnimationStyle
             )
         }
+        val predictiveBackExitDirection = appNavigationSettings.predictiveBackExitDirection
         val activeBottomTabRoute = resolveActiveBottomTabRoute(
             currentKey = currentNavigation3Key,
             currentBottomItem = currentBottomNavItem
@@ -2523,6 +2524,7 @@ fun AppNavigation(
                     cardTransitionEnabled = cardTransitionEnabled,
                     predictiveBackEnabled = predictiveBackEnabled,
                     predictiveBackAnimationStyle = predictiveBackAnimationStyle,
+                    predictiveBackExitDirectionOverride = predictiveBackExitDirection,
                     sourceMetadata = navigation3SourceMetadata,
                     onBack = { performSystemBackAction() },
                     modifier = Modifier.fillMaxSize(),

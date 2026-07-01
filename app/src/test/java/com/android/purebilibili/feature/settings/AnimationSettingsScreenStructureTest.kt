@@ -13,7 +13,9 @@ class AnimationSettingsScreenStructureTest {
         assertTrue(source.contains("预测性返回"))
         assertTrue(source.contains("setPredictiveBackEnabled"))
         assertTrue(source.contains("setPredictiveBackAnimationStyle"))
+        assertTrue(source.contains("setPredictiveBackExitDirection"))
         assertTrue(source.contains("resolvePredictiveBackStyleOptions"))
+        assertTrue(source.contains("resolvePredictiveBackExitDirectionOptions"))
         assertTrue(source.contains("SettingsIconRole.PREDICTIVE_BACK"))
     }
 

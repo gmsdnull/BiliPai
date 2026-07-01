@@ -151,6 +151,7 @@ fun AnimationSettingsContent(
     val uiEntranceAnimationEnabled by SettingsManager.getUiEntranceAnimationEnabled(context)
         .collectAsStateWithLifecycle(initialValue = true)
     val predictiveBackStyleOptions = remember { resolvePredictiveBackStyleOptions() }
+    val predictiveBackExitDirectionOptions = remember { resolvePredictiveBackExitDirectionOptions() }
     val effectiveEntranceSpec = rememberEffectiveEntranceMotionSpec()
     // 开关开着、但有效参数被降级为不动画 → 系统减弱动效在生效。
     val entranceDowngradedBySystem = uiEntranceAnimationEnabled && !effectiveEntranceSpec.animate
@@ -363,6 +364,18 @@ fun AnimationSettingsContent(
                                 onSelectionChange = { style ->
                                     scope.launch {
                                         SettingsManager.setPredictiveBackAnimationStyle(context, style)
+                                    }
+                                }
+                            )
+                            IOSDivider()
+                            IOSSlidingSegmentedSetting(
+                                title = "退出方向：${resolvePredictiveBackExitDirectionLabel(appNavigationSettings.predictiveBackExitDirection)}",
+                                subtitle = "跟随卡片时按来源位置决定滑出方向；共享元素返场始终跟随手势",
+                                options = predictiveBackExitDirectionOptions,
+                                selectedValue = appNavigationSettings.predictiveBackExitDirection,
+                                onSelectionChange = { direction ->
+                                    scope.launch {
+                                        SettingsManager.setPredictiveBackExitDirection(context, direction)
                                     }
                                 }
                             )

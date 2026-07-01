@@ -24,4 +24,23 @@ class PredictiveBackSettingsPolicyTest {
     fun styleLabel_fallsBackForUnknownValue() {
         assertEquals("卡片缩放", resolvePredictiveBackStyleLabel("unknown"))
     }
+
+    @Test
+    fun exitDirectionOptions_includeAllSupportedModes() {
+        val values = resolvePredictiveBackExitDirectionOptions().map { it.value }.toSet()
+        assertEquals(setOf("auto", "follow_gesture", "always_right", "always_left"), values)
+    }
+
+    @Test
+    fun exitDirectionLabel_resolvesKnownValues() {
+        assertEquals("跟随卡片", resolvePredictiveBackExitDirectionLabel("auto"))
+        assertEquals("跟随手势", resolvePredictiveBackExitDirectionLabel("follow_gesture"))
+        assertEquals("始终向右", resolvePredictiveBackExitDirectionLabel("always_right"))
+        assertEquals("始终向左", resolvePredictiveBackExitDirectionLabel("always_left"))
+    }
+
+    @Test
+    fun exitDirectionLabel_fallsBackForUnknownValue() {
+        assertEquals("跟随卡片", resolvePredictiveBackExitDirectionLabel("unknown"))
+    }
 }

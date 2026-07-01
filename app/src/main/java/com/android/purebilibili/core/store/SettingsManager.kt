@@ -730,6 +730,7 @@ data class AppNavigationSettings(
     val tabletUseSidebar: Boolean = false,
     val predictiveBackEnabled: Boolean = true,
     val predictiveBackAnimationStyle: String = "scale",
+    val predictiveBackExitDirection: String = "auto",
 )
 
 data class HomeTopTabSettings(
@@ -5681,6 +5682,7 @@ object SettingsManager {
     private val KEY_TABLET_NAVIGATION_MODE = booleanPreferencesKey("tablet_use_sidebar")
     private val KEY_PREDICTIVE_BACK_ENABLED = booleanPreferencesKey("predictive_back_enabled")
     private val KEY_PREDICTIVE_BACK_ANIMATION_STYLE = stringPreferencesKey("predictive_back_animation_style")
+    private val KEY_PREDICTIVE_BACK_EXIT_DIRECTION = stringPreferencesKey("predictive_back_exit_direction")
     
     /**
      *  平板导航模式
@@ -5704,6 +5706,7 @@ object SettingsManager {
             tabletUseSidebar = preferences[KEY_TABLET_NAVIGATION_MODE] ?: false,
             predictiveBackEnabled = preferences[KEY_PREDICTIVE_BACK_ENABLED] ?: true,
             predictiveBackAnimationStyle = preferences[KEY_PREDICTIVE_BACK_ANIMATION_STYLE] ?: "scale",
+            predictiveBackExitDirection = preferences[KEY_PREDICTIVE_BACK_EXIT_DIRECTION] ?: "auto",
         )
     }
 
@@ -5731,6 +5734,10 @@ object SettingsManager {
 
     suspend fun setPredictiveBackAnimationStyle(context: Context, style: String) {
         NavigationSettingsStore.setPredictiveBackAnimationStyle(context, style)
+    }
+
+    suspend fun setPredictiveBackExitDirection(context: Context, direction: String) {
+        NavigationSettingsStore.setPredictiveBackExitDirection(context, direction)
     }
     
     // ========== [问题12] 视频操作按钮可见性 ==========

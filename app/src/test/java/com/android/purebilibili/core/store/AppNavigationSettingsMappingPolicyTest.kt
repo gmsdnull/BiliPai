@@ -26,6 +26,7 @@ class AppNavigationSettingsMappingPolicyTest {
         assertFalse(result.tabletUseSidebar)
         assertTrue(result.predictiveBackEnabled)
         assertEquals("scale", result.predictiveBackAnimationStyle)
+        assertEquals("auto", result.predictiveBackExitDirection)
     }
 
     @Test
