@@ -29,4 +29,10 @@ class AppSquircleModifiersTest {
             )
         )
     }
+
+    @Test
+    fun iosPreset_usesContinuousRoundingPolicy() {
+        assertTrue(shouldUseIosContinuousRounding(UiPreset.IOS))
+        assertFalse(shouldUseIosContinuousRounding(UiPreset.MD3))
+    }
 }

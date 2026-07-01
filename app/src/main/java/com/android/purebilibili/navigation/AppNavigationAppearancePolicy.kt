@@ -12,6 +12,17 @@ internal data class AppNavigationAppearance(
     val bottomBarFloating: Boolean
 )
 
+internal fun resolveEffectiveNavigationBottomBarBlur(
+    homeSettings: HomeSettings,
+    uiPreset: UiPreset,
+    androidNativeVariant: AndroidNativeVariant
+): Boolean = when {
+    uiPreset == UiPreset.MD3 &&
+        androidNativeVariant == AndroidNativeVariant.MATERIAL3 &&
+        !homeSettings.androidNativeLiquidGlassEnabled -> false
+    else -> homeSettings.isBottomBarBlurEnabled
+}
+
 internal fun resolveAppNavigationAppearance(
     homeSettings: HomeSettings,
     uiPreset: UiPreset = UiPreset.IOS,
@@ -20,7 +31,11 @@ internal fun resolveAppNavigationAppearance(
     return AppNavigationAppearance(
         cardTransitionEnabled = homeSettings.cardTransitionEnabled,
         videoTransitionRealtimeBlurEnabled = homeSettings.videoTransitionRealtimeBlurEnabled,
-        bottomBarBlurEnabled = homeSettings.isBottomBarBlurEnabled,
+        bottomBarBlurEnabled = resolveEffectiveNavigationBottomBarBlur(
+            homeSettings = homeSettings,
+            uiPreset = uiPreset,
+            androidNativeVariant = androidNativeVariant
+        ),
         bottomBarLabelMode = homeSettings.bottomBarLabelMode,
         bottomBarFloating = homeSettings.isBottomBarFloating
     )

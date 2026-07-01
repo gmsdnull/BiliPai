@@ -21,11 +21,18 @@ fun Modifier.adaptiveSquircleBackground(
 ): Modifier {
     val uiPreset = LocalUiPreset.current
     val androidNativeVariant = LocalAndroidNativeVariant.current
-    return if (shouldUseMiuixSmoothRounding(uiPreset, androidNativeVariant)) {
-        squircleBackground(color = color, cornerRadius = cornerRadius)
-    } else {
-        clip(RoundedCornerShape(cornerRadius))
-            .background(color)
+    return when {
+        shouldUseMiuixSmoothRounding(uiPreset, androidNativeVariant) -> {
+            squircleBackground(color = color, cornerRadius = cornerRadius)
+        }
+        shouldUseIosContinuousRounding(uiPreset) -> {
+            clip(IosContinuousRoundedCornerShape(cornerRadius))
+                .background(color)
+        }
+        else -> {
+            clip(RoundedCornerShape(cornerRadius))
+                .background(color)
+        }
     }
 }
 

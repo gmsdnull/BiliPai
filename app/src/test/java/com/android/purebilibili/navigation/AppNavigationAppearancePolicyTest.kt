@@ -48,8 +48,18 @@ class AppNavigationAppearancePolicyTest {
         )
 
         assertTrue(appearance.bottomBarFloating)
-        assertTrue(appearance.bottomBarBlurEnabled)
+        assertFalse(appearance.bottomBarBlurEnabled)
         kotlin.test.assertEquals(0, appearance.bottomBarLabelMode)
+    }
+
+    @Test
+    fun iosPreset_keepsBottomBarBlurWithDefaultHomeSettings() {
+        val appearance = resolveAppNavigationAppearance(
+            homeSettings = HomeSettings(),
+            uiPreset = UiPreset.IOS
+        )
+
+        assertTrue(appearance.bottomBarBlurEnabled)
     }
 
     @Test

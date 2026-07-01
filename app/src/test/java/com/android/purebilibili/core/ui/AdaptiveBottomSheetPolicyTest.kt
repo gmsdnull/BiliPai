@@ -28,10 +28,10 @@ class AdaptiveBottomSheetPolicyTest {
     fun `ios preset should use softer sheet motion`() {
         val spec = resolveAdaptiveBottomSheetMotionSpec(UiPreset.IOS)
 
-        assertEquals(240, spec.scrimEnterDurationMillis)
+        assertEquals(360, spec.scrimEnterDurationMillis)
         assertEquals(180, spec.scrimExitDurationMillis)
-        assertEquals(240, spec.contentEnterFadeDurationMillis)
-        assertEquals(160, spec.contentExitFadeDurationMillis)
+        assertEquals(360, spec.contentEnterFadeDurationMillis)
+        assertEquals(180, spec.contentExitFadeDurationMillis)
     }
 
     @Test

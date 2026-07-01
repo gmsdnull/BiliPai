@@ -66,6 +66,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.layout.onSizeChanged
+import com.android.purebilibili.core.theme.LocalAndroidNativeVariant
 import com.android.purebilibili.core.theme.LocalUiPreset
 import com.android.purebilibili.core.ui.rememberAppChevronUpIcon
 import com.android.purebilibili.core.ui.bottomSheetContentEnterTransition
@@ -336,7 +337,10 @@ fun VideoCommentSheetHost(
         topReservedPx = topReservedPx
     )
     val uiPreset = LocalUiPreset.current
-    val motionSpec = remember(uiPreset) { resolveAdaptiveBottomSheetMotionSpec(uiPreset) }
+    val androidNativeVariant = LocalAndroidNativeVariant.current
+    val motionSpec = remember(uiPreset, androidNativeVariant) {
+        resolveAdaptiveBottomSheetMotionSpec(uiPreset, androidNativeVariant)
+    }
     val appearance = rememberVideoCommentAppearance()
     var isDraggingSheet by remember { mutableStateOf(false) }
     var isDismissDragSettling by remember { mutableStateOf(false) }
@@ -531,8 +535,8 @@ fun VideoCommentSheetHost(
 
     AnimatedVisibility(
         visible = hostVisible,
-        enter = bottomSheetScrimEnterTransition(motionSpec),
-        exit = bottomSheetScrimExitTransition(motionSpec)
+        enter = bottomSheetScrimEnterTransition(uiPreset, androidNativeVariant),
+        exit = bottomSheetScrimExitTransition(uiPreset, androidNativeVariant)
     ) {
         val interceptBackdropTap = shouldInterceptVideoCommentSheetHostBackdropTap(
             mainSheetVisible = mainSheetVisible
@@ -569,8 +573,8 @@ fun VideoCommentSheetHost(
             val sheetHeight = with(density) { sheetHeightPx.toDp() }
             AnimatedVisibility(
                 visible = hostVisible,
-                enter = bottomSheetContentEnterTransition(motionSpec),
-                exit = bottomSheetContentExitTransition(motionSpec),
+                enter = bottomSheetContentEnterTransition(uiPreset, androidNativeVariant),
+                exit = bottomSheetContentExitTransition(uiPreset, androidNativeVariant),
                 modifier = Modifier.align(Alignment.BottomCenter)
             ) {
                 Surface(

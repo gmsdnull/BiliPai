@@ -70,7 +70,18 @@ object AppShapes {
         androidNativeVariant: AndroidNativeVariant
     ): Shape {
         val dp = resolveContainerCornerDp(level, uiPreset, androidNativeVariant)
-        return if (level == ContainerLevel.Sheet) {
+        return if (shouldUseIosContinuousRounding(uiPreset)) {
+            if (level == ContainerLevel.Sheet) {
+                IosContinuousRoundedCornerShape(
+                    topStart = dp,
+                    topEnd = dp,
+                    bottomStart = 0.dp,
+                    bottomEnd = 0.dp
+                )
+            } else {
+                IosContinuousRoundedCornerShape(cornerRadius = dp)
+            }
+        } else if (level == ContainerLevel.Sheet) {
             RoundedCornerShape(topStart = dp, topEnd = dp, bottomStart = 0.dp, bottomEnd = 0.dp)
         } else {
             RoundedCornerShape(dp)

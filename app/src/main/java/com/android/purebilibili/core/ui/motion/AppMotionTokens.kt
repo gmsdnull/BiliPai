@@ -9,10 +9,12 @@ import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.IntOffset
 import com.android.purebilibili.core.theme.AndroidNativeVariant
 import com.android.purebilibili.core.theme.LocalAndroidNativeVariant
 import com.android.purebilibili.core.theme.LocalUiPreset
 import com.android.purebilibili.core.theme.UiPreset
+import com.android.purebilibili.core.theme.resolveAndroidNativeChromeTokens
 
 internal object AppMotionEasing {
     val EmphasizedEnter: Easing = CubicBezierEasing(0.22f, 1f, 0.36f, 1f)
@@ -177,4 +179,34 @@ object AppMotionTokens {
         durationMillis = SHARED_TRANSITION_DURATION_MILLIS,
         easing = SHARED_TRANSITION_EASING
     )
+
+    fun <T> resolveBottomSheetSlideSpec(
+        uiPreset: UiPreset,
+        androidNativeVariant: AndroidNativeVariant
+    ): FiniteAnimationSpec<T> = if (uiPreset == UiPreset.IOS) {
+        softLandingSpring()
+    } else {
+        val tokens = resolveAndroidNativeChromeTokens(uiPreset, androidNativeVariant)
+        continuityTween(tokens.motionStandardMillis)
+    }
+
+    fun <T> resolveBottomSheetFadeEnterSpec(
+        uiPreset: UiPreset,
+        androidNativeVariant: AndroidNativeVariant
+    ): FiniteAnimationSpec<T> = resolveEmphasizedSpec(uiPreset, androidNativeVariant)
+
+    fun <T> resolveBottomSheetFadeExitSpec(
+        uiPreset: UiPreset,
+        androidNativeVariant: AndroidNativeVariant
+    ): FiniteAnimationSpec<T> = resolveExpressiveSpec(uiPreset, androidNativeVariant)
+
+    fun resolveBottomSheetSlideExitSpec(
+        uiPreset: UiPreset,
+        androidNativeVariant: AndroidNativeVariant
+    ): FiniteAnimationSpec<IntOffset> = if (uiPreset == UiPreset.IOS) {
+        softLandingSpring()
+    } else {
+        val tokens = resolveAndroidNativeChromeTokens(uiPreset, androidNativeVariant)
+        emphasizedExitTween(tokens.expressiveMotionDurationMillis)
+    }
 }

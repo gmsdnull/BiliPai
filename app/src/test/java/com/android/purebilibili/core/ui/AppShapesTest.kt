@@ -1,10 +1,12 @@
 package com.android.purebilibili.core.ui
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import com.android.purebilibili.core.theme.AndroidNativeVariant
 import com.android.purebilibili.core.theme.UiPreset
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class AppShapesTest {
@@ -106,6 +108,26 @@ class AppShapesTest {
             androidNativeVariant = AndroidNativeVariant.MATERIAL3
         )
         assertEquals(6.dp, ios)
+    }
+
+    @Test
+    fun iosContainerShape_usesContinuousCornerImplementation() {
+        val shape = AppShapes.resolveContainerShape(
+            level = ContainerLevel.Card,
+            uiPreset = UiPreset.IOS,
+            androidNativeVariant = AndroidNativeVariant.MATERIAL3
+        )
+        assertIs<IosContinuousRoundedCornerShapeImpl>(shape)
+    }
+
+    @Test
+    fun md3ContainerShape_usesRoundedCornerShape() {
+        val shape = AppShapes.resolveContainerShape(
+            level = ContainerLevel.Card,
+            uiPreset = UiPreset.MD3,
+            androidNativeVariant = AndroidNativeVariant.MATERIAL3
+        )
+        assertIs<RoundedCornerShape>(shape)
     }
 
     @Test

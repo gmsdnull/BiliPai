@@ -2,6 +2,7 @@ package com.android.purebilibili.core.ui
 
 import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.TweenSpec
+
 import com.android.purebilibili.core.theme.AndroidNativeVariant
 import com.android.purebilibili.core.theme.UiPreset
 import com.android.purebilibili.core.theme.resolveAndroidNativeChromeTokens
@@ -9,6 +10,7 @@ import com.android.purebilibili.core.ui.motion.AppMotionTokens
 import com.android.purebilibili.core.ui.motion.pullRefreshReleaseSpring
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class AppMotionTokensTest {
@@ -106,6 +108,26 @@ class AppMotionTokensTest {
         assertEquals(240, miuix.motionEmphasizedMillis)
         assertTrue(ios.motionStandardMillis > 0, "iOS motionStandardMillis should be a nominal positive value")
         assertTrue(ios.motionEmphasizedMillis > ios.motionStandardMillis, "iOS emphasized > standard")
+    }
+
+    @Test
+    fun ios_bottomSheetSlideSpec_usesSoftLandingSpring() {
+        val spec = AppMotionTokens.resolveBottomSheetSlideSpec<Int>(
+            uiPreset = UiPreset.IOS,
+            androidNativeVariant = AndroidNativeVariant.MATERIAL3
+        )
+        assertIs<SpringSpec<Int>>(spec)
+    }
+
+    @Test
+    fun md3_bottomSheetSlideSpec_usesStandardTween() {
+        val spec = AppMotionTokens.resolveBottomSheetSlideSpec<Int>(
+            uiPreset = UiPreset.MD3,
+            androidNativeVariant = AndroidNativeVariant.MATERIAL3
+        )
+        val tween = spec as? TweenSpec<Int>
+            ?: error("expected TweenSpec, got ${spec::class.simpleName}")
+        assertEquals(200, tween.durationMillis)
     }
 
     @Test

@@ -34,9 +34,8 @@ import com.android.purebilibili.core.theme.LocalAndroidNativeVariant
 import com.android.purebilibili.core.theme.LocalUiPreset
 import com.android.purebilibili.core.theme.UiPreset
 import com.android.purebilibili.core.theme.iOSSystemGray4
-import com.android.purebilibili.core.ui.motion.emphasizedEnterTween
-import com.android.purebilibili.core.ui.motion.emphasizedExitTween
-import com.android.purebilibili.core.ui.motion.softLandingSpring
+import com.android.purebilibili.core.theme.resolveAndroidNativeChromeTokens
+import com.android.purebilibili.core.ui.motion.AppMotionTokens
 
 internal data class AdaptiveBottomSheetVisualSpec(
     val cornerRadiusDp: Int,
@@ -71,49 +70,60 @@ internal fun resolveAdaptiveBottomSheetVisualSpec(
 }
 
 internal fun resolveAdaptiveBottomSheetMotionSpec(
-    uiPreset: UiPreset
+    uiPreset: UiPreset,
+    androidNativeVariant: AndroidNativeVariant = AndroidNativeVariant.MATERIAL3
 ): AdaptiveBottomSheetMotionSpec {
-    return if (uiPreset == UiPreset.MD3) {
-        AdaptiveBottomSheetMotionSpec(
-            scrimEnterDurationMillis = 220,
-            scrimExitDurationMillis = 160,
-            contentEnterFadeDurationMillis = 220,
-            contentExitFadeDurationMillis = 150
-        )
-    } else {
-        AdaptiveBottomSheetMotionSpec(
-            scrimEnterDurationMillis = 240,
-            scrimExitDurationMillis = 180,
-            contentEnterFadeDurationMillis = 240,
-            contentExitFadeDurationMillis = 160
-        )
-    }
+    val tokens = resolveAndroidNativeChromeTokens(uiPreset, androidNativeVariant)
+    return AdaptiveBottomSheetMotionSpec(
+        scrimEnterDurationMillis = tokens.motionEmphasizedMillis,
+        scrimExitDurationMillis = tokens.expressiveMotionDurationMillis,
+        contentEnterFadeDurationMillis = tokens.motionEmphasizedMillis,
+        contentExitFadeDurationMillis = tokens.expressiveMotionDurationMillis
+    )
 }
 
 internal fun bottomSheetScrimEnterTransition(
-    motionSpec: AdaptiveBottomSheetMotionSpec
-): EnterTransition = fadeIn(emphasizedEnterTween(motionSpec.scrimEnterDurationMillis))
+    uiPreset: UiPreset,
+    androidNativeVariant: AndroidNativeVariant = AndroidNativeVariant.MATERIAL3
+): EnterTransition = fadeIn(
+    AppMotionTokens.resolveBottomSheetFadeEnterSpec(uiPreset, androidNativeVariant)
+)
 
 internal fun bottomSheetScrimExitTransition(
-    motionSpec: AdaptiveBottomSheetMotionSpec
-): ExitTransition = fadeOut(emphasizedExitTween(motionSpec.scrimExitDurationMillis))
+    uiPreset: UiPreset,
+    androidNativeVariant: AndroidNativeVariant = AndroidNativeVariant.MATERIAL3
+): ExitTransition = fadeOut(
+    AppMotionTokens.resolveBottomSheetFadeExitSpec(uiPreset, androidNativeVariant)
+)
 
 internal fun bottomSheetContentEnterTransition(
-    motionSpec: AdaptiveBottomSheetMotionSpec
+    uiPreset: UiPreset,
+    androidNativeVariant: AndroidNativeVariant = AndroidNativeVariant.MATERIAL3
 ): EnterTransition {
     return slideInVertically(
         initialOffsetY = { it },
-        animationSpec = softLandingSpring()
-    ) + fadeIn(emphasizedEnterTween(motionSpec.contentEnterFadeDurationMillis))
+        animationSpec = AppMotionTokens.resolveBottomSheetSlideSpec(uiPreset, androidNativeVariant)
+    ) + fadeIn(
+        AppMotionTokens.resolveBottomSheetFadeEnterSpec(uiPreset, androidNativeVariant)
+    )
 }
 
 internal fun bottomSheetContentExitTransition(
-    motionSpec: AdaptiveBottomSheetMotionSpec
+    uiPreset: UiPreset,
+    androidNativeVariant: AndroidNativeVariant = AndroidNativeVariant.MATERIAL3
 ): ExitTransition {
     return slideOutVertically(
         targetOffsetY = { it },
-        animationSpec = emphasizedExitTween(motionSpec.contentExitFadeDurationMillis)
-    ) + fadeOut(emphasizedExitTween(motionSpec.contentExitFadeDurationMillis))
+        animationSpec = AppMotionTokens.resolveBottomSheetSlideExitSpec(
+            uiPreset,
+            androidNativeVariant
+        )
+    ) + fadeOut(
+        AppMotionTokens.resolveBottomSheetFadeExitSpec<Float>(
+            uiPreset,
+            androidNativeVariant
+        )
+    )
 }
 
 /**
@@ -135,7 +145,22 @@ fun IOSModalBottomSheet(
 ) {
     val uiPreset = LocalUiPreset.current
     val androidNativeVariant = LocalAndroidNativeVariant.current
-    val visualSpec = remember(uiPreset) { resolveAdaptiveBottomSheetVisualSpec(uiPreset) }
+    val visualSpec = remember(uiPreset, androidNativeVariant) {
+        resolveAdaptiveBottomSheetVisualSpec(uiPreset, androidNativeVariant)
+    }
+    val sheetShape = remember(visualSpec, uiPreset) {
+        if (shouldUseIosContinuousRounding(uiPreset)) {
+            IosContinuousRoundedCornerShape(
+                topStart = visualSpec.cornerRadiusDp.dp,
+                topEnd = visualSpec.cornerRadiusDp.dp
+            )
+        } else {
+            RoundedCornerShape(
+                topStart = visualSpec.cornerRadiusDp.dp,
+                topEnd = visualSpec.cornerRadiusDp.dp
+            )
+        }
+    }
     val progressVisual = resolveInteractiveOverlayProgressVisual(
         presentationProgress = presentationProgress,
         surfaceType = InteractiveOverlaySurfaceType.BOTTOM_SHEET,
@@ -157,10 +182,7 @@ fun IOSModalBottomSheet(
         onDismissRequest = onDismissRequest,
         modifier = modifier,
         sheetState = sheetState,
-        shape = RoundedCornerShape(
-            topStart = visualSpec.cornerRadiusDp.dp,
-            topEnd = visualSpec.cornerRadiusDp.dp
-        ),
+        shape = sheetShape,
         containerColor = resolvedContainerColor,
         scrimColor = scrimColor.copy(alpha = progressVisual.scrimAlpha),
         dragHandle = if (visualSpec.useMaterialDragHandle) {
