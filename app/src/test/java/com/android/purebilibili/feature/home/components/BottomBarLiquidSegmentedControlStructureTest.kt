@@ -349,6 +349,35 @@ class BottomBarLiquidSegmentedControlStructureTest {
     }
 
     @Test
+    fun `pager calm follow keeps translation only like tap driven segmented controls`() {
+        assertTrue(resolveSegmentedControlPagerCalmFollow(pagerIndicatorPosition = 0.4f))
+        assertFalse(resolveSegmentedControlPagerCalmFollow(pagerIndicatorPosition = null))
+        assertFalse(shouldAnimateSegmentedControlPagerSettle(pagerCalmFollow = true))
+        assertTrue(shouldAnimateSegmentedControlPagerSettle(pagerCalmFollow = false))
+        assertFalse(
+            shouldApplySegmentedControlPagerMotionEffects(
+                pagerDriven = true,
+                pagerCalmFollow = true,
+                dragIsDragging = false,
+            )
+        )
+        assertTrue(
+            shouldApplySegmentedControlPagerMotionEffects(
+                pagerDriven = true,
+                pagerCalmFollow = false,
+                dragIsDragging = false,
+            )
+        )
+        assertTrue(
+            shouldApplySegmentedControlPagerMotionEffects(
+                pagerDriven = true,
+                pagerCalmFollow = true,
+                dragIsDragging = true,
+            )
+        )
+    }
+
+    @Test
     fun `segmented control follows pager position with liquid indicator deformation`() {
         assertEquals(
             0.4f,
@@ -383,10 +412,18 @@ class BottomBarLiquidSegmentedControlStructureTest {
         assertTrue(source.contains("resolveSegmentedControlEffectiveIndicatorPosition("))
         assertTrue(source.contains("resolveTopTabPagerVelocityItemsPerSecond("))
         assertTrue(source.contains("shouldDeformTopTabIndicator("))
+        assertTrue(source.contains("resolveSegmentedControlPagerCalmFollow("))
+        assertTrue(source.contains("shouldApplySegmentedControlPagerMotionEffects("))
         assertTrue(source.contains("resolveSegmentedControlPagerInteractionProgress("))
         assertTrue(source.contains("resolveSegmentedControlIndicatorPressProgress("))
         assertTrue(source.contains("effectiveIndicatorPressProgress"))
-        assertTrue(source.contains("dragState.snapTo("))
+        assertTrue(source.contains("dragState.snapTo(safeSelectedIndex.toFloat())"))
+        assertFalse(
+            source.contains(
+                "LaunchedEffect(pagerIndicatorPosition, pagerIsScrolling, itemCount, dragState)"
+            ),
+            "Pager follow must not async snap drag state every frame; that fights composition-time pager translation and causes indicator twitch"
+        )
     }
 
     @Test

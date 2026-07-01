@@ -103,6 +103,18 @@ class VideoContentTabBarPolicyTest {
     }
 
     @Test
+    fun `info comment tab bar disables tab row drag so pager swipe stays smooth`() {
+        val source = loadSource(
+            "app/src/main/java/com/android/purebilibili/feature/video/screen/VideoContentSection.kt"
+        )
+        val tabBarBlock = source
+            .substringAfter("fun VideoContentTabBar(")
+            .substringBefore("// [新增] 恢复画面按钮")
+
+        assertTrue(tabBarBlock.contains("dragSelectionEnabled = false"))
+    }
+
+    @Test
     fun `info comment tab bar disables tap press refraction`() {
         val source = loadSource(
             "app/src/main/java/com/android/purebilibili/feature/video/screen/VideoContentSection.kt"

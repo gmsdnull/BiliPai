@@ -225,6 +225,23 @@ internal fun resolveSegmentedControlIndicatorPressProgress(
     pagerInteractionProgress: Float,
 ): Float = maxOf(tapPressProgress, motionProgress, pagerInteractionProgress)
 
+internal fun resolveSegmentedControlPagerCalmFollow(
+    pagerIndicatorPosition: Float?,
+): Boolean = pagerIndicatorPosition != null
+
+internal fun shouldAnimateSegmentedControlPagerSettle(
+    pagerCalmFollow: Boolean,
+): Boolean = !pagerCalmFollow
+
+internal fun shouldApplySegmentedControlPagerMotionEffects(
+    pagerDriven: Boolean,
+    pagerCalmFollow: Boolean,
+    dragIsDragging: Boolean,
+): Boolean {
+    if (dragIsDragging) return true
+    return pagerDriven && !pagerCalmFollow
+}
+
 @Composable
 internal fun BottomBarLiquidIndicatorSurface(
     modifier: Modifier = Modifier,
@@ -534,21 +551,14 @@ fun BottomBarLiquidSegmentedControl(
         clickPulseKey.intValue += 1
         onSelected(index)
     }
-    LaunchedEffect(safeSelectedIndex, pagerIsScrolling) {
+    val pagerCalmFollow = resolveSegmentedControlPagerCalmFollow(pagerIndicatorPosition)
+    LaunchedEffect(safeSelectedIndex, pagerIsScrolling, pagerCalmFollow) {
         if (!pagerIsScrolling && !dragState.isDragging) {
-            dragState.updateIndex(safeSelectedIndex)
-        }
-    }
-    LaunchedEffect(pagerIndicatorPosition, pagerIsScrolling, itemCount, dragState) {
-        if (
-            pagerIsScrolling &&
-            pagerIndicatorPosition != null &&
-            !dragState.isDragging &&
-            itemCount > 0
-        ) {
-            dragState.snapTo(
-                pagerIndicatorPosition.coerceIn(0f, (itemCount - 1).toFloat())
-            )
+            if (shouldAnimateSegmentedControlPagerSettle(pagerCalmFollow)) {
+                dragState.updateIndex(safeSelectedIndex)
+            } else {
+                dragState.snapTo(safeSelectedIndex.toFloat())
+            }
         }
     }
 
@@ -585,6 +595,11 @@ fun BottomBarLiquidSegmentedControl(
         val pagerDriven = resolveSegmentedControlPagerDriven(
             pagerIsScrolling = pagerIsScrolling,
             pagerIndicatorPosition = pagerIndicatorPosition,
+            dragIsDragging = dragState.isDragging,
+        )
+        val applyPagerMotionEffects = shouldApplySegmentedControlPagerMotionEffects(
+            pagerDriven = pagerDriven,
+            pagerCalmFollow = pagerCalmFollow,
             dragIsDragging = dragState.isDragging,
         )
         val indicatorOffset = resolveSegmentedControlIndicatorOffsetDp(
@@ -624,7 +639,7 @@ fun BottomBarLiquidSegmentedControl(
         }
         val pagerVelocityPositionTracker = remember { mutableFloatStateOf(indicatorPosition) }
         val pagerVelocityTimeTracker = remember { mutableLongStateOf(System.nanoTime()) }
-        val pagerVelocityItemsPerSecond = if (pagerDriven) {
+        val pagerVelocityItemsPerSecond = if (applyPagerMotionEffects) {
             resolveTopTabPagerVelocityItemsPerSecond(
                 currentPosition = indicatorPosition,
                 previousPosition = pagerVelocityPositionTracker.floatValue,
@@ -634,20 +649,23 @@ fun BottomBarLiquidSegmentedControl(
             0f
         }
         SideEffect {
-            if (pagerDriven) {
+            if (applyPagerMotionEffects) {
                 pagerVelocityPositionTracker.floatValue = indicatorPosition
                 pagerVelocityTimeTracker.longValue = System.nanoTime()
             }
         }
-        val indicatorIsInteracting = pagerDriven ||
+        val indicatorIsInteracting = applyPagerMotionEffects ||
             dragState.isDragging ||
             dragState.isRunning ||
             (tapPressRefractionEnabled && pressMotionProgress > 0.001f)
         val shouldStretchIndicator = dragState.isDragging ||
-            shouldDeformTopTabIndicator(
-                position = indicatorPosition,
-                isInMotion = indicatorIsInteracting,
-            )
+            (
+                applyPagerMotionEffects &&
+                    shouldDeformTopTabIndicator(
+                        position = indicatorPosition,
+                        isInMotion = indicatorIsInteracting,
+                    )
+                )
         val motionVelocityItemsPerSecond = if (dragState.isDragging) {
             dragState.deformationVelocityItemsPerSecond
         } else {
@@ -670,24 +688,33 @@ fun BottomBarLiquidSegmentedControl(
             tapPressRefractionEnabled = tapPressRefractionEnabled
         )
         val tapPressProgress = if (tapPressRefractionEnabled) pressMotionProgress else 0f
-        val pagerInteractionProgress = resolveSegmentedControlPagerInteractionProgress(
-            indicatorPosition = indicatorPosition,
-            motionProgress = motionProgress,
-            pagerDriven = pagerDriven,
-        )
+        val pagerInteractionProgress = if (pagerCalmFollow) {
+            0f
+        } else {
+            resolveSegmentedControlPagerInteractionProgress(
+                indicatorPosition = indicatorPosition,
+                motionProgress = motionProgress,
+                pagerDriven = pagerDriven,
+            )
+        }
         val effectiveIndicatorPressProgress = resolveSegmentedControlIndicatorPressProgress(
             tapPressProgress = tapPressProgress,
             motionProgress = motionProgress,
             pagerInteractionProgress = pagerInteractionProgress,
         )
         val indicatorDragScaleProgress = rememberBottomBarIndicatorDragScaleProgress(
-            isDragging = dragState.isDragging || pagerInteractionProgress > 0.02f
+            isDragging = dragState.isDragging ||
+                (!pagerCalmFollow && pagerInteractionProgress > 0.02f)
         )
-        val indicatorLayerScaleProgress = maxOf(
-            indicatorDragScaleProgress,
-            tapPressProgress,
-            if (pagerDriven) pagerInteractionProgress else 0f,
-        )
+        val indicatorLayerScaleProgress = if (pagerCalmFollow && pagerDriven) {
+            0f
+        } else {
+            maxOf(
+                indicatorDragScaleProgress,
+                tapPressProgress,
+                if (pagerDriven) pagerInteractionProgress else 0f,
+            )
+        }
         val indicatorLayerScaleTransform = BottomBarIndicatorLayerTransform(
             scaleX = dragState.scaleX,
             scaleY = dragState.scaleY

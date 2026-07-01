@@ -1491,6 +1491,7 @@ private fun VideoContentTabBar(
                 forceLiquidChrome = homeSettings.androidNativeLiquidGlassEnabled,
                 liquidGlassEffectsEnabled = liquidChromeSpec.liquidGlassEffectsEnabled,
                 tapPressRefractionEnabled = false,
+                dragSelectionEnabled = false,
                 pagerIndicatorPosition = pagerIndicatorPosition,
                 pagerIsScrolling = pagerIsScrolling,
             )
