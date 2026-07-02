@@ -259,6 +259,15 @@ tasks.matching { task ->
     dependsOn(prepareKspGeneratedDirs)
 }
 
+val debugProjectDexTasks = setOf("dexBuilderDebug", "mergeProjectDexDebug")
+tasks.matching { task ->
+    task.name in debugProjectDexTasks
+}.configureEach {
+    // Android Studio Run 可能复用旧 project_dex_archive，导致匿名内部类重复合并。
+    // 只强制 debug 的 project dex 任务重跑，避免影响 release/dev/smooth 构建语义。
+    outputs.upToDateWhen { false }
+}
+
 // 🔥 Compose 编译器性能指标 (仅在需要分析时启用，会拖慢编译速度)
 // composeCompiler {
 //     reportsDestination = layout.buildDirectory.dir("compose_reports")
