@@ -2,6 +2,7 @@ package com.android.purebilibili.feature.home
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class HomeReturnAnimationPolicyTest {
 
@@ -98,5 +99,27 @@ class HomeReturnAnimationPolicyTest {
                 isQuickReturnFromDetail = false
             )
         )
+    }
+
+    @Test
+    fun returnBackgroundFrame_fadesHomeBlurAndScrimToClear() {
+        val start = resolveHomeVideoTransitionBackgroundFrame(progress = 1f, sdkInt = 35)
+        val middle = resolveHomeVideoTransitionBackgroundFrame(progress = 0.5f, sdkInt = 35)
+        val end = resolveHomeVideoTransitionBackgroundFrame(progress = 0f, sdkInt = 35)
+
+        assertTrue(start.blurRadiusPx > middle.blurRadiusPx)
+        assertTrue(middle.blurRadiusPx > end.blurRadiusPx)
+        assertTrue(start.scrimAlpha > middle.scrimAlpha)
+        assertTrue(middle.scrimAlpha > end.scrimAlpha)
+        assertEquals(0f, end.blurRadiusPx)
+        assertEquals(0f, end.scrimAlpha)
+    }
+
+    @Test
+    fun returnBackgroundFrame_disablesBlurBelowAndroidSButKeepsScrim() {
+        val frame = resolveHomeVideoTransitionBackgroundFrame(progress = 1f, sdkInt = 30)
+
+        assertEquals(0f, frame.blurRadiusPx)
+        assertTrue(frame.scrimAlpha > 0f)
     }
 }

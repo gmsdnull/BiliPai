@@ -87,7 +87,7 @@ class AppNavigationNavigation3BridgeStructureTest {
     }
 
     @Test
-    fun homeVideoUsesComposeCardShellContainerTransformWithNativeBackgroundOnly() {
+    fun homeVideoUsesComposeCardShellContainerTransformWithoutNativeBackgroundPreview() {
         val source = appNavigationSource()
         val videoDetailBranch = source
             .substringAfter("BiliPaiNavEntryContentRole.VIDEO_DETAIL ->")
@@ -99,20 +99,20 @@ class AppNavigationNavigation3BridgeStructureTest {
             .substringAfter("BiliPaiNavDisplayHost(")
             .substringBefore(") { key ->")
 
-        assertTrue(source.contains("fun shouldUseNativeVideoBackgroundReturnEffect("))
+        assertFalse(source.contains("fun shouldUseNativeVideoBackgroundReturnEffect("))
+        assertFalse(source.contains("LocalNativeVideoCardTransitionController.current"))
         assertFalse(source.contains("NativeVideoCardTransitionOpenRequest"))
+        assertFalse(source.contains("NativeVideoCardTransitionCloseRequest"))
         assertFalse(homeVideoClickBlock.contains("startOpen("))
         assertFalse(source.contains("&&\n                            !intent.isVerticalVideo"))
         assertFalse(videoDetailBranch.contains("!shouldUseNativeVideoCardTransition(videoKey)"))
         assertFalse(videoDetailBranch.contains("!shouldUseNativeVideoBackgroundReturnEffect(videoKey)"))
         assertTrue(videoDetailBranch.contains("transitionEnabled = shouldEnableVideoDetailSharedTransition("))
-        assertTrue(videoDetailBranch.contains("nativeVideoBackPreviewVideoKey == videoKey.bvid"))
-        assertTrue(videoDetailBranch.contains("alpha = if (hideVideoDetailForNativeBackPreview) 0f else 1f"))
-        assertTrue(source.contains("previewNativeVideoBackProgress("))
-        assertTrue(source.contains("nativeVideoBackPreviewVideoKey = videoKey.bvid"))
-        assertTrue(source.contains("nativeVideoBackPreviewVideoKey = null"))
-        assertTrue(navHostCall.contains("onNativeVideoBackProgress = ::previewNativeVideoBackProgress"))
-        assertTrue(navHostCall.contains("onNativeVideoBackCancelled = {"))
+        assertFalse(videoDetailBranch.contains("nativeVideoBackPreviewVideoKey == videoKey.bvid"))
+        assertFalse(videoDetailBranch.contains("hideVideoDetailForNativeBackPreview"))
+        assertFalse(source.contains("previewNativeVideoBackProgress("))
+        assertFalse(source.contains("nativeVideoBackPreviewVideoKey"))
+        assertFalse(navHostCall.contains("onNativeVideoBackProgress = ::previewNativeVideoBackProgress"))
     }
 
     @Test
@@ -145,13 +145,10 @@ class AppNavigationNavigation3BridgeStructureTest {
     fun videoReturnEntersMiniPlayerBeforePoppingDestination() {
         val source = appNavigationSource()
         val helperBlock = source
-            .substringAfter("fun popVideoDetailWithNativeTransition(")
-            .substringBefore("fun previewNativeVideoBackProgress(")
-        val commitPopBlock = helperBlock
-            .substringAfter("val commitPop = {")
-            .substringBefore("}")
-        val prepareMiniPlayerIndex = commitPopBlock.indexOf("prepareVideoPlaybackForNavigationExit(videoKey)")
-        val popIndex = commitPopBlock.indexOf("popAction()")
+            .substringAfter("fun popVideoDetailWithSharedReturnState(")
+            .substringBefore("val performSystemBackAction")
+        val prepareMiniPlayerIndex = helperBlock.indexOf("prepareVideoPlaybackForNavigationExit(videoKey)")
+        val popIndex = helperBlock.indexOf("popAction()")
 
         assertTrue(prepareMiniPlayerIndex >= 0)
         assertTrue(prepareMiniPlayerIndex < popIndex)
@@ -165,15 +162,12 @@ class AppNavigationNavigation3BridgeStructureTest {
             .substringAfter("AppSystemBackAction.NAVIGATE_UP ->")
             .substringBefore("AppSystemBackAction.FINISH_ACTIVITY ->")
         val helperBlock = source
-            .substringAfter("fun popVideoDetailWithNativeTransition(")
-            .substringBefore("fun previewNativeVideoBackProgress(")
-        val commitPopBlock = helperBlock
-            .substringAfter("val commitPop = {")
-            .substringBefore("}")
-        val prepareIndex = commitPopBlock.indexOf("prepareVideoPlaybackForNavigationExit")
-        val popIndex = commitPopBlock.indexOf("popAction()")
+            .substringAfter("fun popVideoDetailWithSharedReturnState(")
+            .substringBefore("val performSystemBackAction")
+        val prepareIndex = helperBlock.indexOf("prepareVideoPlaybackForNavigationExit")
+        val popIndex = helperBlock.indexOf("popAction()")
 
-        assertTrue(navigateUpBlock.contains("popVideoDetailWithNativeTransition("))
+        assertTrue(navigateUpBlock.contains("popVideoDetailWithSharedReturnState("))
         assertTrue(prepareIndex >= 0)
         assertTrue(prepareIndex < popIndex)
     }
@@ -248,15 +242,15 @@ class AppNavigationNavigation3BridgeStructureTest {
             .substringAfter("AppSystemBackAction.NAVIGATE_UP ->")
             .substringBefore("AppSystemBackAction.FINISH_ACTIVITY ->")
         val helperBlock = source
-            .substringAfter("fun popVideoDetailWithNativeTransition(")
-            .substringBefore("fun previewNativeVideoBackProgress(")
+            .substringAfter("fun popVideoDetailWithSharedReturnState(")
+            .substringBefore("val performSystemBackAction")
         val markCallIndex = helperBlock.indexOf("markNavigation3VideoReturnBeforeBackAction(targetKey = targetKey)")
-        val commitIndex = helperBlock.indexOf("val commitPop = {")
+        val prepareIndex = helperBlock.indexOf("prepareVideoPlaybackForNavigationExit(videoKey)")
 
         assertTrue(markerIndex >= 0)
         assertTrue(navigateUpIndex >= 0)
-        assertTrue(navigateUpBlock.contains("popVideoDetailWithNativeTransition("))
-        assertTrue(markCallIndex in 0 until commitIndex)
+        assertTrue(navigateUpBlock.contains("popVideoDetailWithSharedReturnState("))
+        assertTrue(markCallIndex in 0 until prepareIndex)
         assertTrue(source.contains("isVideoDetailRoute(fromRoute)"))
         assertTrue(source.contains("isVideoCardReturnTargetRoute(targetRoute)"))
     }

@@ -3,8 +3,12 @@ package com.android.purebilibili.feature.home
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.RenderEffect
+import android.graphics.Shader
+import android.os.Build
 import android.os.SystemClock
 import androidx.compose.animation.*
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.LinearOutSlowInEasing
@@ -37,6 +41,7 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.zIndex
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalNavigationDrawer
@@ -801,6 +806,51 @@ fun HomeScreen(
         cardTransitionEnabled = cardTransitionEnabled,
         isQuickReturnFromDetail = isQuickReturningFromVideoDetail
     )
+    val homeVideoTransitionBackgroundProgress = remember { Animatable(0f) }
+    LaunchedEffect(
+        hideTopTabsForForwardDetailNav,
+        isReturningFromVideoDetail,
+        cardTransitionEnabled,
+        returnAnimationSuppressionDurationMs
+    ) {
+        if (!cardTransitionEnabled) {
+            homeVideoTransitionBackgroundProgress.snapTo(0f)
+            return@LaunchedEffect
+        }
+        when {
+            isReturningFromVideoDetail -> {
+                homeVideoTransitionBackgroundProgress.snapTo(1f)
+                homeVideoTransitionBackgroundProgress.animateTo(
+                    targetValue = 0f,
+                    animationSpec = tween(
+                        durationMillis = returnAnimationSuppressionDurationMs
+                            .coerceAtMost(420L)
+                            .toInt()
+                            .coerceAtLeast(180),
+                        easing = LinearOutSlowInEasing
+                    )
+                )
+            }
+            hideTopTabsForForwardDetailNav -> {
+                homeVideoTransitionBackgroundProgress.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween(
+                        durationMillis = HOME_VIDEO_TRANSITION_BACKGROUND_FORWARD_DURATION_MS,
+                        easing = LinearOutSlowInEasing
+                    )
+                )
+            }
+            else -> {
+                homeVideoTransitionBackgroundProgress.animateTo(
+                    targetValue = 0f,
+                    animationSpec = tween(
+                        durationMillis = HOME_VIDEO_TRANSITION_BACKGROUND_CANCEL_DURATION_MS,
+                        easing = FastOutLinearInEasing
+                    )
+                )
+            }
+        }
+    }
     // Navigation 返回不一定触发首页 Lifecycle.ON_START，顶栏恢复必须直接跟随返回态。
     LaunchedEffect(isReturningFromVideoDetail, cardTransitionEnabled, isQuickReturningFromVideoDetail) {
         if (!isReturningFromVideoDetail) return@LaunchedEffect
@@ -2298,7 +2348,13 @@ fun HomeScreen(
 // [Removed] Animation logic moved inside HorizontalPager where the active state exists
     
     // 指示器位置逻辑也移入 graphicsLayer
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .homeVideoTransitionBackgroundEffect {
+                homeVideoTransitionBackgroundProgress.value
+            }
+    ) {
         scaffoldContent()
         val video = pendingNotInterestedVideo
         if (video != null) {
@@ -2349,6 +2405,36 @@ internal fun resolveHomeOverlayMotionSpec(): HomeOverlayMotionSpec {
     )
 }
 
+private const val HOME_VIDEO_TRANSITION_MAX_BLUR_RADIUS_PX = 36f
+private const val HOME_VIDEO_TRANSITION_MAX_SCRIM_ALPHA = 0.22f
+private const val HOME_VIDEO_TRANSITION_BACKGROUND_FORWARD_DURATION_MS = 160
+private const val HOME_VIDEO_TRANSITION_BACKGROUND_CANCEL_DURATION_MS = 160
+
+internal data class HomeVideoTransitionBackgroundFrame(
+    val blurRadiusPx: Float,
+    val scrimAlpha: Float
+)
+
+internal fun resolveHomeVideoTransitionBackgroundFrame(
+    progress: Float,
+    sdkInt: Int = Build.VERSION.SDK_INT
+): HomeVideoTransitionBackgroundFrame {
+    val strength = smoothHomeVideoTransitionBackgroundProgress(progress)
+    return HomeVideoTransitionBackgroundFrame(
+        blurRadiusPx = if (sdkInt >= Build.VERSION_CODES.S) {
+            HOME_VIDEO_TRANSITION_MAX_BLUR_RADIUS_PX * strength
+        } else {
+            0f
+        },
+        scrimAlpha = HOME_VIDEO_TRANSITION_MAX_SCRIM_ALPHA * strength
+    )
+}
+
+private fun smoothHomeVideoTransitionBackgroundProgress(progress: Float): Float {
+    val clamped = progress.coerceIn(0f, 1f)
+    return clamped * clamped * (3f - 2f * clamped)
+}
+
 internal fun resolveReturnAnimationSuppressionDurationMs(
     isTabletLayout: Boolean,
     cardAnimationEnabled: Boolean,
@@ -2373,6 +2459,31 @@ internal fun resolveHomeContentInteractionRestoreDelayMs(
     // 视觉返场保护仍由 suppression / 底栏恢复窗口负责；
     // 首页列表手势应在页面重新可见时立即恢复，避免第一下滑动被导航态吞掉。
     return 0L
+}
+
+private fun Modifier.homeVideoTransitionBackgroundEffect(
+    progressProvider: () -> Float
+): Modifier {
+    return graphicsLayer {
+        val frame = resolveHomeVideoTransitionBackgroundFrame(progressProvider())
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && frame.blurRadiusPx > 0.01f) {
+            renderEffect = RenderEffect
+                .createBlurEffect(
+                    frame.blurRadiusPx,
+                    frame.blurRadiusPx,
+                    Shader.TileMode.CLAMP
+                )
+                .asComposeRenderEffect()
+        } else {
+            renderEffect = null
+        }
+    }.drawWithContent {
+        drawContent()
+        val frame = resolveHomeVideoTransitionBackgroundFrame(progressProvider())
+        if (frame.scrimAlpha > 0.001f) {
+            drawRect(Color.Black.copy(alpha = frame.scrimAlpha))
+        }
+    }
 }
 
 private fun Modifier.homeFeedTopVideoFadeMask(fadeHeight: Dp): Modifier {
