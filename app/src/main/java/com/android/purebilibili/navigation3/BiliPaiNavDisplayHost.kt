@@ -120,7 +120,6 @@ internal fun BiliPaiNavDisplayHost(
                     )
                 )
                 videoCardTransitionBackgroundPhase = VideoCardTransitionBackgroundPhase.IDLE
-                videoCardTransitionBackgroundProgress.snapTo(0f)
             }
 
             returnedFromVideoDetail -> {

@@ -255,7 +255,13 @@ internal fun resolveBiliPaiNavEntryPopRouteTransition(
     if (cardTransitionEnabled) {
         val sharedReadyVideoToSourceCard = sourceMetadata.sharedTransitionReady &&
             videoToCardReturnTarget &&
-            normalizedToRoute == normalizedSourceRoute
+            (
+                normalizedToRoute == normalizedSourceRoute ||
+                    (
+                        normalizedToRoute == BiliPaiNavKey.MainHost.routeBase &&
+                            normalizedActiveMainHostRoute == normalizedSourceRoute
+                    )
+                )
         if (sharedReadyVideoToSourceCard) {
             return BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT
         }
@@ -421,4 +427,3 @@ private fun resolveCardDisabledVideoForwardTransition(
         BiliPaiNavCardSourceDirection.NONE -> null
     }
 }
-
