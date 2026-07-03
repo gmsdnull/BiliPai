@@ -15,7 +15,7 @@ class BiliPaiNavDisplayHostStructureTest {
         assertTrue(source.contains("entryProvider"))
         assertTrue(source.contains("LocalNavAnimatedContentScope.current"))
         assertTrue(source.contains("ProvideAnimatedVisibilityScope("))
-        assertTrue(source.contains("LocalVideoCardSharedElementSourceRoute provides key.toLegacyRoute()"))
+        assertTrue(source.contains("LocalVideoCardSharedElementSourceRoute provides entryRoute"))
         assertTrue(source.contains("sharedTransitionScope = sharedTransitionScope"))
         assertFalse(source.contains("VideoSharedTransitionBackdropHost("))
         assertFalse(source.contains("videoCardTransitionController"))
@@ -72,6 +72,18 @@ class BiliPaiNavDisplayHostStructureTest {
         assertTrue(source.contains("onBack()"))
         assertFalse(source.contains("import androidx.activity.compose.BackHandler"))
         assertFalse(source.contains("BackHandler(enabled"))
+    }
+
+    @Test
+    fun navDisplayHostRestoresVideoCardReturnBackgroundBlurFromFullProgress() {
+        val source = navDisplayHostSource()
+        val returnBranch = source
+            .substringAfter("returnedFromVideoDetail -> {")
+            .substringBefore("currentTop !is BiliPaiNavKey.VideoDetail")
+
+        assertTrue(returnBranch.contains("VideoCardTransitionBackgroundPhase.RETURNING"))
+        assertTrue(returnBranch.contains("videoCardTransitionBackgroundProgress.snapTo(1f)"))
+        assertTrue(returnBranch.contains("targetValue = 0f"))
     }
 
     @Test

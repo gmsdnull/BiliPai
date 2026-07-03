@@ -119,13 +119,13 @@ internal fun BiliPaiNavDisplayHost(
                         easing = LinearOutSlowInEasing
                     )
                 )
+                videoCardTransitionBackgroundPhase = VideoCardTransitionBackgroundPhase.IDLE
+                videoCardTransitionBackgroundProgress.snapTo(0f)
             }
 
             returnedFromVideoDetail -> {
                 videoCardTransitionBackgroundPhase = VideoCardTransitionBackgroundPhase.RETURNING
-                if (videoCardTransitionBackgroundProgress.value <= 0.01f) {
-                    videoCardTransitionBackgroundProgress.snapTo(1f)
-                }
+                videoCardTransitionBackgroundProgress.snapTo(1f)
                 videoCardTransitionBackgroundProgress.animateTo(
                     targetValue = 0f,
                     animationSpec = tween(

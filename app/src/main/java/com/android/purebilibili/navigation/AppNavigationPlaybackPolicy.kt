@@ -41,15 +41,6 @@ internal fun resolveVideoReturnBottomBarRevealDelayMs(
     return if (isQuickReturnFromDetail) 120L else 160L
 }
 
-internal fun shouldPrimeBottomBarHiddenBeforeVideoNavigation(
-    sourceRoute: String?,
-    visibleBottomBarRoutes: Set<String>,
-    useSideNavigation: Boolean
-): Boolean {
-    val sourceRouteBase = sourceRoute?.substringBefore("?") ?: return false
-    return !useSideNavigation && sourceRouteBase in visibleBottomBarRoutes
-}
-
 internal fun shouldClearReturningStateWhenDisposingVideoDestination(
     stillInVideoRoute: Boolean
 ): Boolean {

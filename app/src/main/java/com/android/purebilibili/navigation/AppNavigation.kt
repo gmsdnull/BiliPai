@@ -15,6 +15,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
@@ -715,15 +716,6 @@ fun AppNavigation(
             navigation3ReturnSession = navigation3ReturnSession
                 .recordVideoSource(source)
                 .markDetailEntered(SystemClock.uptimeMillis())
-            if (
-                shouldPrimeBottomBarHiddenBeforeVideoNavigation(
-                    sourceRoute = source.route,
-                    visibleBottomBarRoutes = visibleBottomBarRoutes,
-                    useSideNavigation = useSideNavigation
-                )
-            ) {
-                isBottomBarVisible = false
-            }
             miniPlayerManager?.isNavigatingToVideo = true
             miniPlayerManager?.exitMiniMode(animate = false)
             val key = when (parsedKey) {
@@ -871,6 +863,12 @@ fun AppNavigation(
             currentKey = currentNavigation3Key,
             currentBottomItem = currentBottomNavItem
         )
+        val isVideoDetailDestination = isVideoDetailRoute(currentRoute)
+        val bottomBarMountRoute = if (isVideoDetailDestination) {
+            currentBottomNavItem.route
+        } else {
+            activeBottomTabRoute
+        }
         val isSettingsScreen = activeBottomTabRoute == ScreenRoutes.Settings.route
         val shouldHideBottomBarOnTablet = isTabletLayout && isSettingsScreen
 
@@ -887,10 +885,8 @@ fun AppNavigation(
             activeBottomTabRoute = activeBottomTabRoute,
             cardTransitionEnabled = cardTransitionEnabled
         )
-        // 挂载闸门：仅按路由/侧栏/平板判断，不含返回延迟。
-        // 让底栏 AnimatedVisibility 在首页期间保持挂载，使延迟解除后能播放 slideIn+fadeIn 淡入而非硬切。
         val bottomBarMountGate = shouldShowBottomBarForNavigation(
-            activeRoute = activeBottomTabRoute,
+            activeRoute = bottomBarMountRoute,
             visibleBottomBarRoutes = visibleBottomBarRoutes,
             useSideNavigation = useSideNavigation,
             shouldHideBottomBarOnTablet = shouldHideBottomBarOnTablet,
@@ -913,7 +909,7 @@ fun AppNavigation(
             isBottomBarVisible = true
         }
 
-        // 进入视频前隐藏，回到底栏目的地统一恢复；视频共享转场返场时只做短延迟，避免底栏抢封面落位。
+        // 视频详情页只通过可见性退出底栏，避免写入隐藏状态后返回首页卡住。
         LaunchedEffect(
             currentRoute,
             activeBottomTabRoute,
@@ -946,9 +942,13 @@ fun AppNavigation(
         // - 不是故事模式
         // - 且 (模式为始终显示 OR (模式为上滑隐藏 AND 当前状态为可见))
         // - 且 模式不是永久隐藏
-        val finalBottomBarVisible = showBottomBar && 
+        val finalBottomBarVisible = showBottomBar &&
+            !isVideoDetailDestination &&
             bottomBarVisibilityMode != SettingsManager.BottomBarVisibilityMode.ALWAYS_HIDDEN &&
-            (bottomBarVisibilityMode == SettingsManager.BottomBarVisibilityMode.ALWAYS_VISIBLE || isBottomBarVisible)
+            (
+                bottomBarVisibilityMode == SettingsManager.BottomBarVisibilityMode.ALWAYS_VISIBLE ||
+                    isBottomBarVisible
+            )
 
         val setBottomBarVisible: (Boolean) -> Unit = remember {
             bottomBarSetter@{ visible: Boolean ->
@@ -1294,6 +1294,30 @@ fun AppNavigation(
                     }
                 }
 
+                fun mainHostBottomBarRoute(): String {
+                    return currentBottomNavItem.route
+                }
+
+                fun shouldShowMainHostBottomBar(): Boolean {
+                    val route = mainHostBottomBarRoute()
+                    return shouldShowBottomBarForNavigation(
+                        activeRoute = route,
+                        visibleBottomBarRoutes = visibleBottomBarRoutes,
+                        useSideNavigation = useSideNavigation,
+                        shouldHideBottomBarOnTablet = isTabletLayout && route == ScreenRoutes.Settings.route,
+                        shouldDeferReveal = shouldDeferBottomBarReveal
+                    )
+                }
+
+                fun resolveMainHostBottomBarVisible(): Boolean {
+                    return shouldShowMainHostBottomBar() &&
+                        bottomBarVisibilityMode != SettingsManager.BottomBarVisibilityMode.ALWAYS_HIDDEN &&
+                        (
+                            bottomBarVisibilityMode == SettingsManager.BottomBarVisibilityMode.ALWAYS_VISIBLE ||
+                                isBottomBarVisible
+                        )
+                }
+
                 @Composable
                 fun VideoCardTransitionBackgroundRouteContent(
                     key: BiliPaiNavKey,
@@ -1331,42 +1355,50 @@ fun AppNavigation(
                 ) {
                     when (resolveBiliPaiNavEntryContentRole(key)) {
                         BiliPaiNavEntryContentRole.MAIN_HOST -> {
-                            HorizontalPager(
-                                modifier = Modifier.fillMaxSize(),
-                                state = bottomPagerState,
-                                beyondViewportPageCount = resolveBottomPagerBeyondViewportPageCount(
-                                    pageCount = visibleBottomBarItems.size,
-                                    contentReady = bottomPagerContentReady
-                                ),
-                                userScrollEnabled = shouldEnableBottomPagerUserScroll()
-                            ) { page ->
-                                val slotItem = visibleBottomBarItems.getOrNull(page) ?: BottomNavItem.HOME
-                                if (
-                                    shouldComposeBottomPagerPage(
-                                        item = slotItem,
-                                        page = page,
-                                        currentPage = bottomPagerState.currentPage,
-                                        selectedPage = mainBottomPagerState.selectedPage,
-                                        isNavigating = mainBottomPagerState.isNavigating,
-                                        navigationStartPage = mainBottomPagerState.navigationStartPage,
-                                        contentReady = bottomPagerContentReady
-                                    )
-                                ) {
-                                    val pageKey = bottomPagerNavKeyForItem(slotItem)
-                                    bottomPagerSaveableStateHolder.SaveableStateProvider(resolveBottomPagerSaveableStateKey(slotItem)) {
-                                        CompositionLocalProvider(
-                                            LocalVideoCardSharedElementSourceRoute provides pageKey.toLegacyRoute()
-                                        ) {
-                                            VideoCardTransitionBackgroundRouteContent(pageKey) {
-                                                RenderNavigationContent(
-                                                    key = pageKey,
-                                                    isBottomPagerPageActive = page == bottomPagerState.settledPage
+                            CompositionLocalProvider(
+                                LocalBottomBarVisible provides resolveMainHostBottomBarVisible()
+                            ) {
+                                VideoCardTransitionBackgroundRouteContent(bottomPagerNavKeyForItem(currentBottomNavItem)) {
+                                    Box(modifier = Modifier.fillMaxSize()) {
+                                        HorizontalPager(
+                                            modifier = Modifier.fillMaxSize(),
+                                            state = bottomPagerState,
+                                            beyondViewportPageCount = resolveBottomPagerBeyondViewportPageCount(
+                                                pageCount = visibleBottomBarItems.size,
+                                                contentReady = bottomPagerContentReady
+                                            ),
+                                            userScrollEnabled = shouldEnableBottomPagerUserScroll()
+                                        ) { page ->
+                                            val slotItem = visibleBottomBarItems.getOrNull(page) ?: BottomNavItem.HOME
+                                            if (
+                                                shouldComposeBottomPagerPage(
+                                                    item = slotItem,
+                                                    page = page,
+                                                    currentPage = bottomPagerState.currentPage,
+                                                    selectedPage = mainBottomPagerState.selectedPage,
+                                                    isNavigating = mainBottomPagerState.isNavigating,
+                                                    navigationStartPage = mainBottomPagerState.navigationStartPage,
+                                                    contentReady = bottomPagerContentReady
                                                 )
+                                            ) {
+                                                val pageKey = bottomPagerNavKeyForItem(slotItem)
+                                                bottomPagerSaveableStateHolder.SaveableStateProvider(
+                                                    resolveBottomPagerSaveableStateKey(slotItem)
+                                                ) {
+                                                    CompositionLocalProvider(
+                                                        LocalVideoCardSharedElementSourceRoute provides pageKey.toLegacyRoute()
+                                                    ) {
+                                                        RenderNavigationContent(
+                                                            key = pageKey,
+                                                            isBottomPagerPageActive = page == bottomPagerState.settledPage
+                                                        )
+                                                    }
+                                                }
+                                            } else {
+                                                Box(modifier = Modifier.fillMaxSize())
                                             }
                                         }
                                     }
-                                } else {
-                                    Box(modifier = Modifier.fillMaxSize())
                                 }
                             }
                         }
@@ -2225,6 +2257,9 @@ fun AppNavigation(
                                         coverUrl = cover,
                                         sourceRoute = ScreenRoutes.Partition.route
                                     )
+                                },
+                                onBangumiClick = { initialType ->
+                                    pushNavigation3Route(ScreenRoutes.Bangumi.createRoute(initialType))
                                 }
                             )
                         BiliPaiNavEntryContentRole.CATEGORY -> {
@@ -2577,27 +2612,34 @@ fun AppNavigation(
             } // End of Content Box
             } // End of Row
 
-            // ===== 全局底栏 (Global Bottom Bar) =====
-            // 外层用不含返回延迟的 bottomBarMountGate 作为挂载判断：避免非底栏页的多余挂载，
-            // 同时让底栏在首页期间保持挂载，从而在返回延迟解除时由内层 AnimatedVisibility 播放淡入而非硬切。
             if (bottomBarMountGate && bottomBarVisibilityMode != SettingsManager.BottomBarVisibilityMode.ALWAYS_HIDDEN) {
-                // 用于处理底栏悬浮时的点击穿透问题，底栏自身处理点击
-                Box(
-                    modifier = Modifier.align(Alignment.BottomCenter).zIndex(1f)
-                ) {
-                    androidx.compose.animation.AnimatedVisibility(
+                val bottomBarModifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .zIndex(1f)
+
+                Box(modifier = bottomBarModifier) {
+                    AnimatedVisibility(
                         visible = finalBottomBarVisible,
                         enter = slideInVertically(
                             animationSpec = softLandingSpring(),
                             initialOffsetY = { it }
-                        ) + fadeIn(animationSpec = emphasizedEnterTween(navMotionSpec.slowFadeDurationMillis)),
+                        ) + fadeIn(animationSpec = emphasizedEnterTween(navMotionSpec.slowFadeDurationMillis)) +
+                            scaleIn(
+                                animationSpec = softLandingSpring(),
+                                initialScale = 0.96f,
+                                transformOrigin = TransformOrigin(0.5f, 1f)
+                            ),
                         exit = slideOutVertically(
                             animationSpec = emphasizedExitTween(navMotionSpec.fastFadeDurationMillis),
                             targetOffsetY = { it }
-                        ) + fadeOut(animationSpec = emphasizedExitTween(navMotionSpec.fastFadeDurationMillis))
+                        ) + fadeOut(animationSpec = emphasizedExitTween(navMotionSpec.fastFadeDurationMillis)) +
+                            scaleOut(
+                                animationSpec = emphasizedExitTween(navMotionSpec.fastFadeDurationMillis),
+                                targetScale = 0.92f,
+                                transformOrigin = TransformOrigin(0.5f, 1f)
+                            )
                     ) {
                         if (isBottomBarFloating) {
-                            // 悬浮式底栏
                             Box(
                                 modifier = Modifier.fillMaxWidth(),
                                 contentAlignment = Alignment.Center
@@ -2618,7 +2660,7 @@ fun AppNavigation(
                                     dynamicUnreadCount = dynamicUnreadCount,
                                     homeSettings = effectiveHomeSettings,
                                     scrollOffset = scrollOffsetState.floatValue,
-                                    miuixBackdrop = bottomBarBackdrop, // [LayerBackdrop] Real background refraction
+                                    miuixBackdrop = bottomBarBackdrop,
                                     motionTier = com.android.purebilibili.core.ui.adaptive.MotionTier.Normal,
                                     isTransitionRunning = bottomPagerRenderBudget.isTransitionRunning,
                                     forceLowBlurBudget = bottomPagerRenderBudget.forceLowBlurBudget,
@@ -2626,7 +2668,6 @@ fun AppNavigation(
                                         homeFeedScrollInProgressState.value,
                                     uiSkinDecoration = bottomBarUiSkinDecoration,
                                     onToggleSidebar = {
-                                        // [Tablet] Toggle sidebar mode
                                         coroutineScope.launch {
                                             SettingsManager.setTabletUseSidebar(context, true)
                                         }
@@ -2634,7 +2675,6 @@ fun AppNavigation(
                                 )
                             }
                         } else {
-                            // 贴底式底栏
                             FrostedBottomBar(
                                 currentItem = currentBottomNavItem,
                                 onItemClick = handleNavItemClick,
@@ -2651,7 +2691,7 @@ fun AppNavigation(
                                 dynamicUnreadCount = dynamicUnreadCount,
                                 homeSettings = effectiveHomeSettings,
                                 scrollOffset = scrollOffsetState.floatValue,
-                                miuixBackdrop = bottomBarBackdrop, // [LayerBackdrop] Real background refraction
+                                miuixBackdrop = bottomBarBackdrop,
                                 motionTier = com.android.purebilibili.core.ui.adaptive.MotionTier.Normal,
                                 isTransitionRunning = bottomPagerRenderBudget.isTransitionRunning,
                                 forceLowBlurBudget = bottomPagerRenderBudget.forceLowBlurBudget,
@@ -2659,17 +2699,15 @@ fun AppNavigation(
                                     homeFeedScrollInProgressState.value,
                                 uiSkinDecoration = bottomBarUiSkinDecoration,
                                 onToggleSidebar = {
-                                    // [Tablet] Toggle sidebar mode
                                     coroutineScope.launch {
                                         SettingsManager.setTabletUseSidebar(context, true)
                                     }
                                 }
                             )
+                        }
+                    }
+                }
             }
-        }
-        }
-    }
-}
 
             if (predictiveBackEnabled) {
                 MainHostTabBackHandler(
@@ -2705,4 +2743,5 @@ fun AppNavigation(
         } // End of Main Box
         } // End of CompositionLocalProvider
     }
+}
 }

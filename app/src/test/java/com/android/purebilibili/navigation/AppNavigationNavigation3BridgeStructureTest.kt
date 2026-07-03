@@ -378,6 +378,40 @@ class AppNavigationNavigation3BridgeStructureTest {
         assertTrue(source.contains("PrivacyAuthenticationReason.OPEN_PRIVACY_CONTENT"))
     }
 
+    @Test
+    fun videoCardLaunchBottomBarUsesSimpleVisibilityOutsideBackdropSource() {
+        val source = appNavigationSource()
+        val mainHostBranch = source
+            .substringAfter("BiliPaiNavEntryContentRole.MAIN_HOST -> {")
+            .substringBefore("BiliPaiNavEntryContentRole.HOME ->")
+        val sourceContent = source
+            .substringAfter(".miuixLayerBackdrop(bottomBarBackdrop)")
+            .substringBefore("} // End of Content Box")
+        val bottomBarOverlay = source
+            .substringAfter("if (bottomBarMountGate && bottomBarVisibilityMode")
+            .substringBefore("if (predictiveBackEnabled)")
+
+        assertTrue(mainHostBranch.contains("VideoCardTransitionBackgroundRouteContent(bottomPagerNavKeyForItem(currentBottomNavItem))"))
+        assertTrue(source.contains("val isVideoDetailDestination = isVideoDetailRoute(currentRoute)"))
+        assertTrue(source.contains("val bottomBarMountRoute = if (isVideoDetailDestination)"))
+        assertTrue(source.contains("activeRoute = bottomBarMountRoute"))
+        assertTrue(source.contains("!isVideoDetailDestination"))
+        assertTrue(bottomBarOverlay.contains("visible = finalBottomBarVisible"))
+        assertTrue(bottomBarOverlay.contains("slideOutVertically("))
+        assertTrue(bottomBarOverlay.contains("scaleOut("))
+        assertTrue(bottomBarOverlay.contains("TransformOrigin(0.5f, 1f)"))
+        assertTrue(bottomBarOverlay.contains("miuixBackdrop = bottomBarBackdrop"))
+        assertFalse(bottomBarOverlay.contains("videoCardTransitionBackgroundEffect("))
+        assertFalse(source.contains("videoCardTransitionBackgroundProgress = videoCardTransitionBackgroundProgress"))
+        assertFalse(source.contains("videoCardTransitionBackgroundPhaseState = videoCardTransitionBackgroundPhaseState"))
+        assertFalse(sourceContent.contains("miuixBackdrop = bottomBarBackdrop"))
+        assertFalse(source.contains("RenderGlobalBottomBarOverlay()"))
+        assertFalse(source.contains("miuixBackdrop = null"))
+        assertFalse(source.contains("bottomBarVideoCardLaunchFeedback"))
+        assertFalse(source.contains("videoCardLaunchFeedback"))
+        assertFalse(source.contains("shouldPlayBottomBarVideoCardLaunchFeedback"))
+    }
+
     private fun appNavigationSource(): String {
         return listOf(
             File("app/src/main/java/com/android/purebilibili/navigation/AppNavigation.kt"),

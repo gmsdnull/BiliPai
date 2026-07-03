@@ -207,41 +207,4 @@ class AppNavigationPlaybackPolicyTest {
         )
     }
 
-    @Test
-    fun bottomBarPrimesHiddenBeforeVideoNavigationFromVisibleBottomTab() {
-        val visibleRoutes = setOf(
-            ScreenRoutes.Home.route,
-            ScreenRoutes.Dynamic.route,
-            ScreenRoutes.History.route
-        )
-
-        assertTrue(
-            shouldPrimeBottomBarHiddenBeforeVideoNavigation(
-                sourceRoute = ScreenRoutes.Dynamic.route,
-                visibleBottomBarRoutes = visibleRoutes,
-                useSideNavigation = false
-            )
-        )
-        assertTrue(
-            shouldPrimeBottomBarHiddenBeforeVideoNavigation(
-                sourceRoute = "${ScreenRoutes.Home.route}?from=feed",
-                visibleBottomBarRoutes = visibleRoutes,
-                useSideNavigation = false
-            )
-        )
-        assertFalse(
-            shouldPrimeBottomBarHiddenBeforeVideoNavigation(
-                sourceRoute = ScreenRoutes.Search.route,
-                visibleBottomBarRoutes = visibleRoutes,
-                useSideNavigation = false
-            )
-        )
-        assertFalse(
-            shouldPrimeBottomBarHiddenBeforeVideoNavigation(
-                sourceRoute = ScreenRoutes.Dynamic.route,
-                visibleBottomBarRoutes = visibleRoutes,
-                useSideNavigation = true
-            )
-        )
-    }
 }
