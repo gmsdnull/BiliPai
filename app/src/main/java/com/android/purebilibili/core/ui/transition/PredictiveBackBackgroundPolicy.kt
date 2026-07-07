@@ -41,12 +41,23 @@ internal val LocalPredictiveBackBackgroundState = compositionLocalOf {
 }
 
 /**
- * 预测式返回手势进行中，把系统回退进度(0→1)映射为底层页模糊强度(0→1)。
- * 与视频返场 [resolveVideoCardTransitionBackgroundGestureProgress] 方向相反。
+ * 预测式返回手势进行中，把系统回退进度(0→1)映射为底层页模糊强度。
+ *
+ * - 卡片/兄弟页 pop：模糊随手势增强(0→1)，底层页留在后方制造景深；
+ * - 设置 iOS push pop：模糊随手势减弱(1→0)，底层页随视差回到前景应逐渐清晰，
+ *   与视频返场 [resolveVideoCardTransitionBackgroundGestureProgress] 同向。
  */
-internal fun resolvePredictiveBackGestureBlurProgress(backProgress: Float): Float {
+internal fun resolvePredictiveBackGestureBlurProgress(
+    backProgress: Float,
+    routeTransition: BiliPaiNavRouteTransition? = null,
+): Float {
     val clamped = backProgress.coerceIn(0f, 1f)
-    return 1f - (1f - clamped) * (1f - clamped)
+    val increasingBlur = 1f - (1f - clamped) * (1f - clamped)
+    return if (routeTransition == BiliPaiNavRouteTransition.SETTINGS_IOS_PUSH_POP) {
+        1f - increasingBlur
+    } else {
+        increasingBlur
+    }
 }
 
 internal fun resolvePredictiveBackMaxBlurRadiusPx(isLightBackground: Boolean): Float {
@@ -104,7 +115,8 @@ internal fun shouldApplyPredictiveBackGestureBlur(
     if (routeTransition == BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT) return false
     return routeTransition == BiliPaiNavRouteTransition.CLASSIC_CARD ||
         routeTransition == BiliPaiNavRouteTransition.BOTTOM_BAR_SIBLING_POP ||
-        routeTransition == BiliPaiNavRouteTransition.LIGHT_SIBLING_POP
+        routeTransition == BiliPaiNavRouteTransition.LIGHT_SIBLING_POP ||
+        routeTransition == BiliPaiNavRouteTransition.SETTINGS_IOS_PUSH_POP
 }
 
 internal fun shouldApplyPredictiveBackBlurToRoute(

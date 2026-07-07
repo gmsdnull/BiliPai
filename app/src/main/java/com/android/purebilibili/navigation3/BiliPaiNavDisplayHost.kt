@@ -3,7 +3,6 @@ package com.android.purebilibili.navigation3
 import android.app.Application
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -42,6 +41,7 @@ import androidx.navigationevent.compose.rememberNavigationEventState
 import androidx.navigationevent.NavigationEventTransitionState
 import com.android.purebilibili.core.ui.ProvideAnimatedVisibilityScope
 import com.android.purebilibili.core.ui.adaptive.MotionTier
+import com.android.purebilibili.core.ui.motion.gentleEnterTween
 import com.android.purebilibili.core.ui.motion.rememberSystemReduceMotion
 import com.android.purebilibili.core.ui.transition.LocalPredictiveBackBackgroundState
 import com.android.purebilibili.core.ui.transition.LocalVideoCardSharedElementSourceRoute
@@ -54,7 +54,9 @@ import com.android.purebilibili.core.ui.transition.VideoCardTransitionBackground
 import com.android.purebilibili.core.ui.transition.VideoCardTransitionBackgroundState
 import com.android.purebilibili.core.ui.transition.resolvePredictiveBackCommitBlurDurationMs
 import com.android.purebilibili.core.ui.transition.resolvePredictiveBackGestureBlurProgress
-import com.android.purebilibili.core.ui.transition.resolveVideoCardTransitionBackgroundGestureProgress
+import com.android.purebilibili.core.ui.transition.resolveVideoCardTransitionBackgroundGestureBlurProgress
+import com.android.purebilibili.core.ui.transition.resolveVideoCardTransitionBackgroundReturnDurationMs
+import com.android.purebilibili.core.ui.transition.isVideoCardTransitionBackgroundGesturePhase
 import com.android.purebilibili.core.ui.transition.shouldApplyPredictiveBackGestureBlur
 import com.android.purebilibili.navigation.isVideoCardReturnTargetRoute
 import com.android.purebilibili.navigation3.predictiveback.BiliPaiPredictiveBackAnimationHandler
@@ -127,9 +129,8 @@ internal fun BiliPaiNavDisplayHost(
                 videoCardTransitionBackgroundProgress.snapTo(0f)
                 videoCardTransitionBackgroundProgress.animateTo(
                     targetValue = 1f,
-                    animationSpec = tween(
+                    animationSpec = gentleEnterTween(
                         durationMillis = VIDEO_CARD_TRANSITION_BACKGROUND_FORWARD_DURATION_MS,
-                        easing = LinearOutSlowInEasing
                     )
                 )
                 // 详情页覆盖期间保持 blur-only 状态，避免返回 pop 后先清晰一帧再补模糊。
@@ -139,8 +140,23 @@ internal fun BiliPaiNavDisplayHost(
             returnedFromVideoDetail -> {
                 // pop 后首页层已含共享元素回收中的卡片；任何 route 级 blur/scrim 都会让落位封面发糊/闪烁。
                 // 手势阶段已在详情页覆盖下消解虚化(见 performBack 最终进度捕获 + gesture LaunchedEffect)。
-                videoCardTransitionBackgroundProgress.snapTo(0f)
+                // performBack 通常已在 pop 前归零；若仍有残留(非 performBack 路径或竞态)，用与剩余
+                // 虚化成比例的短 animateTo 收尾，避免 OPENING 快速返回周边首页模糊硬切。
                 videoCardTransitionBackgroundPhase = VideoCardTransitionBackgroundPhase.IDLE
+                val remainingBlur = videoCardTransitionBackgroundProgress.value
+                if (remainingBlur > 0.001f) {
+                    videoCardTransitionBackgroundProgress.animateTo(
+                        targetValue = 0f,
+                        animationSpec = tween(
+                            durationMillis = resolveVideoCardTransitionBackgroundReturnDurationMs(
+                                startProgress = remainingBlur,
+                            ).coerceAtMost(VIDEO_CARD_TRANSITION_BACKGROUND_CANCEL_DURATION_MS),
+                            easing = FastOutLinearInEasing,
+                        ),
+                    )
+                } else {
+                    videoCardTransitionBackgroundProgress.snapTo(0f)
+                }
             }
 
             currentTop !is BiliPaiNavKey.VideoDetail -> {
@@ -198,13 +214,17 @@ internal fun BiliPaiNavDisplayHost(
                     ?.latestEvent
                     ?.progress
             val shouldCaptureVideoCardGestureBlur = cardTransitionEnabled &&
-                videoCardTransitionBackgroundPhase == VideoCardTransitionBackgroundPhase.HELD &&
+                isVideoCardTransitionBackgroundGesturePhase(videoCardTransitionBackgroundPhase) &&
                 safeBackStack.lastOrNull() is BiliPaiNavKey.VideoDetail &&
                 isVideoCardReturnTargetRoute(sourceMetadata.sourceRoute) &&
                 finalVideoCardGestureBackProgress != null
             if (shouldCaptureVideoCardGestureBlur) {
                 videoCardTransitionBackgroundProgress.snapTo(
-                    resolveVideoCardTransitionBackgroundGestureProgress(finalVideoCardGestureBackProgress)
+                    resolveVideoCardTransitionBackgroundGestureBlurProgress(
+                        phase = videoCardTransitionBackgroundPhase,
+                        currentBlurProgress = videoCardTransitionBackgroundProgress.value,
+                        backProgress = finalVideoCardGestureBackProgress,
+                    )
                 )
             }
             val shouldFadePredictiveBlur = shouldApplyPredictiveBackGestureBlur(
@@ -233,6 +253,22 @@ internal fun BiliPaiNavDisplayHost(
                 currentPageKey = safeBackStack.lastOrNull(),
             )
             predictiveBlurFadeJob?.join()
+            // pop 之前把视频卡片背景模糊归零：详情页此刻仍覆盖首页，置 0 不可见；
+            // 避免依赖 pop 后 LaunchedEffect(合成之后)才 snapTo(0)，从而消除落位首帧
+            // 首页/封面残留满模糊。
+            // - HELD：正常/手势/实体返回键，覆盖低 progress 手势提交与无手势返回；
+            // - OPENING：进入未完成即快速返回(<前向 ramp)，此前只能在 pop 后硬切，
+            //   现同样在覆盖层下提前归零，落位即清晰，消除快速返回的落位模糊/硬切。
+            val isVideoCardActiveReturn = cardTransitionEnabled &&
+                (
+                    videoCardTransitionBackgroundPhase == VideoCardTransitionBackgroundPhase.HELD ||
+                        videoCardTransitionBackgroundPhase == VideoCardTransitionBackgroundPhase.OPENING
+                    ) &&
+                safeBackStack.lastOrNull() is BiliPaiNavKey.VideoDetail &&
+                isVideoCardReturnTargetRoute(sourceMetadata.sourceRoute)
+            if (isVideoCardActiveReturn && videoCardTransitionBackgroundProgress.value > 0f) {
+                videoCardTransitionBackgroundProgress.snapTo(0f)
+            }
             commitTransitionCallBack()
             onBack()
             predictiveBackBackgroundProgress.snapTo(0f)
@@ -356,14 +392,19 @@ internal fun BiliPaiNavDisplayHost(
 
     // 预测式返回手势进行中(video → card 返回目标)时，让首页全屏高斯模糊随手势进度实时消退，
     // 与共享元素 morph 同步，避免手势"吃掉"过渡时间轴后、提交返回时封面才在满模糊下补一段收尾。
+    // OPENING 阶段同样启用：以当前开场虚化进度为起点线性消退，避免进入未完成即手势返回时背景"卡住"。
     val gestureReturningVideoCard = cardTransitionEnabled &&
-        videoCardTransitionBackgroundPhase == VideoCardTransitionBackgroundPhase.HELD &&
+        isVideoCardTransitionBackgroundGesturePhase(videoCardTransitionBackgroundPhase) &&
         currentBackKey is BiliPaiNavKey.VideoDetail &&
         targetBackKey != null &&
         isVideoCardReturnTargetRoute(sourceMetadata.sourceRoute)
     val gestureBackgroundBlurTarget: Float? =
         if (gestureReturningVideoCard && nativeVideoBackProgress != null) {
-            resolveVideoCardTransitionBackgroundGestureProgress(nativeVideoBackProgress)
+            resolveVideoCardTransitionBackgroundGestureBlurProgress(
+                phase = videoCardTransitionBackgroundPhase,
+                currentBlurProgress = videoCardTransitionBackgroundProgress.value,
+                backProgress = nativeVideoBackProgress,
+            )
         } else {
             null
         }
@@ -381,7 +422,10 @@ internal fun BiliPaiNavDisplayHost(
     )
     val gesturePredictiveBlurTarget: Float? =
         if (predictiveBackGestureBlurEnabled && nativeVideoBackProgress != null) {
-            resolvePredictiveBackGestureBlurProgress(nativeVideoBackProgress)
+            resolvePredictiveBackGestureBlurProgress(
+                backProgress = nativeVideoBackProgress,
+                routeTransition = popRouteTransition,
+            )
         } else {
             null
         }
@@ -396,9 +440,9 @@ internal fun BiliPaiNavDisplayHost(
         onBackCompleted = performBack,
         onBackCancelled = { commitTransition ->
             onNativeVideoBackCancelled(currentBackKey, targetBackKey)
-            // 手势取消且详情页仍在栈顶(HELD)：把随手势消退的背景虚化平滑复原到满值，
+            // 手势取消且详情页仍在栈顶(HELD/OPENING)：把随手势消退的背景虚化平滑复原到满值，
             // 与详情页回弹到全屏保持一致，避免下次手势从残留的中间虚化值起跳。
-            if (videoCardTransitionBackgroundPhase == VideoCardTransitionBackgroundPhase.HELD &&
+            if (isVideoCardTransitionBackgroundGesturePhase(videoCardTransitionBackgroundPhase) &&
                 videoCardTransitionBackgroundProgress.value < 1f
             ) {
                 navigationScope.launch {

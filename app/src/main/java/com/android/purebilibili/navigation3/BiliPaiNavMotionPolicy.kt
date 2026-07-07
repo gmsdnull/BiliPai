@@ -124,6 +124,9 @@ internal fun resolveBiliPaiNavDisplayPopRouteTransition(
     fromKey: BiliPaiNavKey?,
     toKey: BiliPaiNavKey?
 ): BiliPaiNavRouteTransition {
+    if (isSettingsNavPopTransition(fromKey = fromKey, toKey = toKey)) {
+        return BiliPaiNavRouteTransition.SETTINGS_IOS_PUSH_POP
+    }
     val fromVideoKey = fromKey as? BiliPaiNavKey.VideoDetail
     val toIsCardReturnTarget = toKey != null && isCardReturnTargetNavKey(toKey)
     if (cardTransitionEnabled) {
@@ -146,9 +149,6 @@ internal fun resolveBiliPaiNavDisplayPopRouteTransition(
             toIsCardReturnTarget
         if (sharedReadyVideoToSourceCard) {
             return BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT
-        }
-        if (isSettingsNavPopTransition(fromKey = fromKey, toKey = toKey)) {
-            return BiliPaiNavRouteTransition.SETTINGS_IOS_PUSH_POP
         }
         return BiliPaiNavRouteTransition.CLASSIC_CARD
     }

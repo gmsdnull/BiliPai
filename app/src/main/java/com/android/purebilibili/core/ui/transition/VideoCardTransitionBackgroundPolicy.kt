@@ -147,6 +147,43 @@ internal fun resolveVideoCardTransitionBackgroundGestureProgress(
 }
 
 /**
+ * [VideoCardTransitionBackgroundPhase.OPENING] 阶段预测式返回：以当前开场虚化进度为起点，
+ * 随手势线性消退至清晰。与 HELD 满值起点的 [resolveVideoCardTransitionBackgroundGestureProgress] 区分。
+ */
+internal fun resolveVideoCardTransitionBackgroundOpeningGestureProgress(
+    openingBlurProgress: Float,
+    backProgress: Float,
+): Float {
+    val clampedOpening = openingBlurProgress.coerceIn(0f, 1f)
+    val clampedBack = backProgress.coerceIn(0f, 1f)
+    return clampedOpening * (1f - clampedBack)
+}
+
+internal fun isVideoCardTransitionBackgroundGesturePhase(
+    phase: VideoCardTransitionBackgroundPhase,
+): Boolean {
+    return phase == VideoCardTransitionBackgroundPhase.HELD ||
+        phase == VideoCardTransitionBackgroundPhase.OPENING
+}
+
+internal fun resolveVideoCardTransitionBackgroundGestureBlurProgress(
+    phase: VideoCardTransitionBackgroundPhase,
+    currentBlurProgress: Float,
+    backProgress: Float,
+): Float {
+    return when (phase) {
+        VideoCardTransitionBackgroundPhase.HELD ->
+            resolveVideoCardTransitionBackgroundGestureProgress(backProgress)
+        VideoCardTransitionBackgroundPhase.OPENING ->
+            resolveVideoCardTransitionBackgroundOpeningGestureProgress(
+                openingBlurProgress = currentBlurProgress,
+                backProgress = backProgress,
+            )
+        else -> currentBlurProgress
+    }
+}
+
+/**
  * 返回动画提交时，若手势已消解部分虚化(startProgress < 1)，剩余 [RETURNING] 动画按比例缩短，
  * 保持与共享元素落位一致的视觉速度，避免手势拖到底后仍补一段完整时长的收尾。
  */

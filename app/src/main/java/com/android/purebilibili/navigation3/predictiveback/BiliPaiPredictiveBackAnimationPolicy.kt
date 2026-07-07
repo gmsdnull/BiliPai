@@ -23,6 +23,11 @@ internal fun resolveBiliPaiPredictiveBackAnimationHandler(
             style = style,
             exitDirection = exitDirection,
         )
+        // 关闭共享元素时 VideoDetail → 卡片来源页：手势预览与按钮返回复用同一方向化横滑，
+        // 避免"预测手势 AOSP 横滑淡入 vs 提交方向化整宽横滑"的观感分裂。
+        BiliPaiNavRouteTransition.CARD_DISABLED_VIDEO_RETURN_TO_LEFT,
+        BiliPaiNavRouteTransition.CARD_DISABLED_VIDEO_RETURN_TO_RIGHT ->
+            BiliPaiCardDisabledReturnPredictiveBackAnimation(routeTransition)
         else -> BiliPaiDefaultPredictiveBackAnimation()
     }
 }

@@ -7,12 +7,15 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.unit.dp
 import androidx.navigation3.scene.Scene
 import androidx.navigation3.ui.defaultTransitionSpec
 import androidx.navigationevent.NavigationEvent.Companion.EDGE_LEFT
@@ -20,6 +23,7 @@ import androidx.navigationevent.NavigationEventTransitionState
 import androidx.navigationevent.NavigationEventTransitionState.InProgress
 import com.android.purebilibili.core.ui.motion.SETTINGS_IOS_PUSH_PARALLAX_FACTOR
 import com.android.purebilibili.core.ui.motion.resolveSettingsIosPushPopContentTransform
+import com.android.purebilibili.core.ui.util.rememberDeviceCornerShape
 import com.android.purebilibili.navigation3.BiliPaiNavKey
 import kotlinx.coroutines.CoroutineScope
 
@@ -62,6 +66,7 @@ internal class BiliPaiIosPushPredictiveBackAnimation(
         val windowInfo = LocalWindowInfo.current
         val containerWidthPx = windowInfo.containerSize.width.toFloat()
         val pageKey = contentPageKey.toString()
+        val deviceCornerShape = rememberDeviceCornerShape()
         val progressInProgress = transitionState as? InProgress
         val edge = progressInProgress?.latestEvent?.swipeEdge ?: 0
         val gestureProgress = progressInProgress?.latestEvent?.progress ?: 0f
@@ -92,18 +97,23 @@ internal class BiliPaiIosPushPredictiveBackAnimation(
             isCurrentNavTarget -> gestureProgress
             else -> gestureProgress
         }
+        val needsCornerClip = isExitingPage || isCurrentNavTarget
 
-        return this.graphicsLayer {
-            when {
-                isExitingPage || isCurrentNavTarget -> {
-                    translationX = containerWidthPx * activeProgress * directionMultiplier
-                }
-                isUnderlayPage && (transitionState is InProgress || exitingPageKey.value != null) -> {
-                    val parallaxShift = containerWidthPx * SETTINGS_IOS_PUSH_PARALLAX_FACTOR
-                    translationX = -parallaxShift * directionMultiplier * (1f - activeProgress)
+        return this
+            .graphicsLayer {
+                when {
+                    isExitingPage || isCurrentNavTarget -> {
+                        translationX = containerWidthPx * activeProgress * directionMultiplier
+                    }
+                    isUnderlayPage && (transitionState is InProgress || exitingPageKey.value != null) -> {
+                        val parallaxShift = containerWidthPx * SETTINGS_IOS_PUSH_PARALLAX_FACTOR
+                        translationX = -parallaxShift * directionMultiplier * (1f - activeProgress)
+                    }
                 }
             }
-        }
+            .clip(
+                if (needsCornerClip) deviceCornerShape else RoundedCornerShape(0.dp),
+            )
     }
 
     override fun AnimatedContentTransitionScope<Scene<BiliPaiNavKey>>.onPredictivePopTransitionSpec(

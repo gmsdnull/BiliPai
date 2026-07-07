@@ -250,6 +250,50 @@ class VideoCardTransitionBackgroundPolicyTest {
     }
 
     @Test
+    fun openingGestureProgress_fadesFromCurrentOpeningBlurLinearly() {
+        assertEquals(0.6f, resolveVideoCardTransitionBackgroundOpeningGestureProgress(
+            openingBlurProgress = 0.6f,
+            backProgress = 0f,
+        ))
+        assertEquals(0.3f, resolveVideoCardTransitionBackgroundOpeningGestureProgress(
+            openingBlurProgress = 0.6f,
+            backProgress = 0.5f,
+        ))
+        assertEquals(0f, resolveVideoCardTransitionBackgroundOpeningGestureProgress(
+            openingBlurProgress = 0.6f,
+            backProgress = 1f,
+        ))
+    }
+
+    @Test
+    fun resolveGestureBlurProgress_routesHeldAndOpeningPhases() {
+        assertEquals(
+            0.5f,
+            resolveVideoCardTransitionBackgroundGestureBlurProgress(
+                phase = VideoCardTransitionBackgroundPhase.HELD,
+                currentBlurProgress = 1f,
+                backProgress = 0.5f,
+            )
+        )
+        assertEquals(
+            0.4f * (1f - 0.4f),
+            resolveVideoCardTransitionBackgroundGestureBlurProgress(
+                phase = VideoCardTransitionBackgroundPhase.OPENING,
+                currentBlurProgress = 0.4f,
+                backProgress = 0.4f,
+            )
+        )
+    }
+
+    @Test
+    fun gesturePhase_includesHeldAndOpeningOnly() {
+        assertTrue(isVideoCardTransitionBackgroundGesturePhase(VideoCardTransitionBackgroundPhase.HELD))
+        assertTrue(isVideoCardTransitionBackgroundGesturePhase(VideoCardTransitionBackgroundPhase.OPENING))
+        assertFalse(isVideoCardTransitionBackgroundGesturePhase(VideoCardTransitionBackgroundPhase.IDLE))
+        assertFalse(isVideoCardTransitionBackgroundGesturePhase(VideoCardTransitionBackgroundPhase.RETURNING))
+    }
+
+    @Test
     fun returnDurationScalesWithRemainingBlurButKeepsMinimumFloor() {
         // 未消解(startProgress=1)时用完整时长；手势已消解一半则约减半；接近清晰时不低于取消时长下限。
         assertEquals(

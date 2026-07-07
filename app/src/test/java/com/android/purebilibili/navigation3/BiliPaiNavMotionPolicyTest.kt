@@ -349,4 +349,16 @@ class BiliPaiNavMotionPolicyTest {
         assertEquals(BiliPaiNavRouteTransition.CLASSIC_CARD, decision.routeTransition)
         assertFalse(decision.interceptSystemBack)
     }
+
+    @Test
+    fun navDisplayPop_settingsSubtree_usesIosPushEvenWhenCardTransitionsDisabled() {
+        val transition = resolveBiliPaiNavDisplayPopRouteTransition(
+            cardTransitionEnabled = false,
+            sourceMetadata = BiliPaiNavSourceMetadata(),
+            fromKey = BiliPaiNavKey.AppearanceSettings,
+            toKey = BiliPaiNavKey.Settings,
+        )
+
+        assertEquals(BiliPaiNavRouteTransition.SETTINGS_IOS_PUSH_POP, transition)
+    }
 }

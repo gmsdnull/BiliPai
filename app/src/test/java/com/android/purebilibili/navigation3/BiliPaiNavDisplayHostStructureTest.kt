@@ -89,11 +89,13 @@ class BiliPaiNavDisplayHostStructureTest {
         assertTrue(openingBranch.contains("VideoCardTransitionBackgroundPhase.HELD"))
         assertFalse(openingBranch.substringAfter("targetValue = 1f").contains("videoCardTransitionBackgroundProgress.snapTo(0f)"))
         assertFalse(openingBranch.substringAfter("targetValue = 1f").contains("VideoCardTransitionBackgroundPhase.IDLE"))
-        assertTrue(returnBranch.contains("videoCardTransitionBackgroundProgress.snapTo(0f)"))
         assertTrue(returnBranch.contains("VideoCardTransitionBackgroundPhase.IDLE"))
         assertFalse(returnBranch.contains("VideoCardTransitionBackgroundPhase.RETURNING"))
         assertFalse(returnBranch.contains("videoCardTransitionBackgroundProgress.snapTo(1f)"))
-        assertFalse(returnBranch.contains("resolveVideoCardTransitionBackgroundReturnDurationMs"))
+        assertTrue(returnBranch.contains("resolveVideoCardTransitionBackgroundReturnDurationMs"))
+        // OPENING 快速返回：performBack 通常已 pop 前归零；残留时用短 animateTo 平滑收尾。
+        assertTrue(returnBranch.contains("remainingBlur"))
+        assertTrue(returnBranch.contains("videoCardTransitionBackgroundProgress.animateTo("))
     }
 
     @Test
@@ -118,10 +120,39 @@ class BiliPaiNavDisplayHostStructureTest {
         assertTrue(source.contains("onBack = { performBack { } }"))
         assertTrue(source.contains("onBackCompleted = performBack"))
         assertTrue(performBackBlock.contains("finalVideoCardGestureBackProgress"))
-        assertTrue(performBackBlock.contains("resolveVideoCardTransitionBackgroundGestureProgress"))
+        assertTrue(performBackBlock.contains("resolveVideoCardTransitionBackgroundGestureBlurProgress"))
         assertTrue(performBackBlock.contains("predictiveBackHandler.onBackPressed("))
         assertTrue(performBackBlock.contains("commitTransitionCallBack()"))
         assertTrue(performBackBlock.contains("onBack()"))
+    }
+
+    @Test
+    fun navDisplayHostResetsVideoCardBackgroundBlurBeforePop() {
+        val source = navDisplayHostSource()
+        val performBackBlock = source
+            .substringAfter("val performBack: (() -> Unit) -> Unit = {")
+            .substringBefore("val scopedContent:")
+
+        // pop(onBack) 之前必须先把视频卡片进行中返回(HELD/OPENING)的背景模糊归零，
+        // 避免依赖 pop 后 LaunchedEffect 才 snapTo(0)，从而消除落位首帧残留模糊。
+        val preOnBack = performBackBlock.substringBefore("onBack()")
+        assertTrue(preOnBack.contains("isVideoCardActiveReturn"))
+        assertTrue(preOnBack.contains("VideoCardTransitionBackgroundPhase.HELD"))
+        // OPENING 快速返回也需在 pop 前归零，落位即清晰。
+        assertTrue(preOnBack.contains("VideoCardTransitionBackgroundPhase.OPENING"))
+        assertTrue(preOnBack.contains("videoCardTransitionBackgroundProgress.snapTo(0f)"))
+    }
+
+    @Test
+    fun navDisplayHostSupportsOpeningPhaseVideoCardGestureBlur() {
+        val source = navDisplayHostSource()
+
+        assertTrue(source.contains("isVideoCardTransitionBackgroundGesturePhase"))
+        assertTrue(source.contains("resolveVideoCardTransitionBackgroundGestureBlurProgress"))
+        val gestureBlock = source
+            .substringAfter("val gestureReturningVideoCard =")
+            .substringBefore("val gestureBackgroundBlurTarget")
+        assertTrue(gestureBlock.contains("isVideoCardTransitionBackgroundGesturePhase"))
     }
 
     @Test

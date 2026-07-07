@@ -24,6 +24,22 @@ class PredictiveBackBackgroundPolicyTest {
     }
 
     @Test
+    fun settingsIosPushPopGestureProgressMapsBackGestureToDecreasingBlur() {
+        assertEquals(1f, resolvePredictiveBackGestureBlurProgress(
+            backProgress = 0f,
+            routeTransition = BiliPaiNavRouteTransition.SETTINGS_IOS_PUSH_POP,
+        ))
+        assertEquals(0.25f, resolvePredictiveBackGestureBlurProgress(
+            backProgress = 0.5f,
+            routeTransition = BiliPaiNavRouteTransition.SETTINGS_IOS_PUSH_POP,
+        ))
+        assertEquals(0f, resolvePredictiveBackGestureBlurProgress(
+            backProgress = 1f,
+            routeTransition = BiliPaiNavRouteTransition.SETTINGS_IOS_PUSH_POP,
+        ))
+    }
+
+    @Test
     fun blurFrameUsesQuantizedRadiusOnApi31Plus_darkTheme() {
         val frame = resolvePredictiveBackBlurFrame(
             progress = 1f,
@@ -118,6 +134,18 @@ class PredictiveBackBackgroundPolicyTest {
         assertTrue(
             shouldApplyPredictiveBackGestureBlur(
                 routeTransition = BiliPaiNavRouteTransition.LIGHT_SIBLING_POP,
+                predictiveBackEnabled = true,
+                gestureReturningVideoCard = false,
+                motionTier = MotionTier.Normal,
+            )
+        )
+    }
+
+    @Test
+    fun shouldApplyPredictiveBlur_forSettingsIosPushPopWhenEnabled() {
+        assertTrue(
+            shouldApplyPredictiveBackGestureBlur(
+                routeTransition = BiliPaiNavRouteTransition.SETTINGS_IOS_PUSH_POP,
                 predictiveBackEnabled = true,
                 gestureReturningVideoCard = false,
                 motionTier = MotionTier.Normal,
