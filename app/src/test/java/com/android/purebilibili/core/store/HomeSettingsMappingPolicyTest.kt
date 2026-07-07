@@ -269,6 +269,38 @@ class HomeSettingsMappingPolicyTest {
     }
 
     @Test
+    fun searchCollapseSelectionPreservesCurrentTopTabBehavior() {
+        assertEquals(
+            HomeHeaderCollapseMode.BOTH,
+            resolveHomeHeaderCollapseModeForSearch(
+                currentMode = HomeHeaderCollapseMode.TABS_ONLY,
+                collapseSearch = true
+            )
+        )
+        assertEquals(
+            HomeHeaderCollapseMode.TABS_ONLY,
+            resolveHomeHeaderCollapseModeForSearch(
+                currentMode = HomeHeaderCollapseMode.BOTH,
+                collapseSearch = false
+            )
+        )
+        assertEquals(
+            HomeHeaderCollapseMode.SEARCH_ONLY,
+            resolveHomeHeaderCollapseModeForSearch(
+                currentMode = HomeHeaderCollapseMode.OFF,
+                collapseSearch = true
+            )
+        )
+        assertEquals(
+            HomeHeaderCollapseMode.OFF,
+            resolveHomeHeaderCollapseModeForSearch(
+                currentMode = HomeHeaderCollapseMode.SEARCH_ONLY,
+                collapseSearch = false
+            )
+        )
+    }
+
+    @Test
     fun topTabCollapseSelectionPreservesCurrentSearchBehavior() {
         assertEquals(
             HomeHeaderCollapseMode.BOTH,

@@ -621,6 +621,18 @@ internal fun resolveHomeHeaderCollapseModeForTopTabs(
     }
 }
 
+internal fun resolveHomeHeaderCollapseModeForSearch(
+    currentMode: HomeHeaderCollapseMode,
+    collapseSearch: Boolean
+): HomeHeaderCollapseMode {
+    return when {
+        collapseSearch && currentMode.collapseTabs -> HomeHeaderCollapseMode.BOTH
+        collapseSearch -> HomeHeaderCollapseMode.SEARCH_ONLY
+        currentMode.collapseTabs -> HomeHeaderCollapseMode.TABS_ONLY
+        else -> HomeHeaderCollapseMode.OFF
+    }
+}
+
 internal fun resolveUiPresetPreferenceValue(rawValue: Int?): UiPreset {
     return UiPreset.fromValue(rawValue ?: UiPreset.MD3.value)
 }

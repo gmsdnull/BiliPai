@@ -32,7 +32,7 @@ object PluginStore {
     fun isEnabledFlow(context: Context, pluginId: String): Flow<Boolean> {
         val key = booleanPreferencesKey("plugin_enabled_$pluginId")
         return context.pluginDataStore.data.map { prefs ->
-            prefs[key] ?: false  // 默认禁用
+            prefs[key] ?: resolvePluginDefaultEnabled(pluginId)
         }
     }
     
